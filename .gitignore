@@ -25,3 +25,8 @@ dist-ssr
 
 # Husky
 .husky/_
+
+# Environment variables
+.env
+.env.local
+.env.*.local

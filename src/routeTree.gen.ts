@@ -9,18 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ZustandIndexRouteImport } from './routes/zustand/index'
+import { Route as StoreAdminAuthenticatedRouteImport } from './routes/store-admin/_authenticated'
 import { Route as StoreAdminLoginIndexRouteImport } from './routes/store-admin/login/index'
+import { Route as StoreAdminAuthenticatedDaybookIndexRouteImport } from './routes/store-admin/_authenticated/daybook/index'
 
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZustandIndexRoute = ZustandIndexRouteImport.update({
+  id: '/zustand/',
+  path: '/zustand/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreAdminAuthenticatedRoute = StoreAdminAuthenticatedRouteImport.update({
+  id: '/store-admin/_authenticated',
+  path: '/store-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoreAdminLoginIndexRoute = StoreAdminLoginIndexRouteImport.update({
@@ -28,51 +35,87 @@ const StoreAdminLoginIndexRoute = StoreAdminLoginIndexRouteImport.update({
   path: '/store-admin/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoreAdminAuthenticatedDaybookIndexRoute =
+  StoreAdminAuthenticatedDaybookIndexRouteImport.update({
+    id: '/daybook/',
+    path: '/daybook/',
+    getParentRoute: () => StoreAdminAuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/store-admin': typeof StoreAdminAuthenticatedRouteWithChildren
+  '/zustand/': typeof ZustandIndexRoute
   '/store-admin/login/': typeof StoreAdminLoginIndexRoute
+  '/store-admin/daybook/': typeof StoreAdminAuthenticatedDaybookIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/store-admin': typeof StoreAdminAuthenticatedRouteWithChildren
+  '/zustand': typeof ZustandIndexRoute
   '/store-admin/login': typeof StoreAdminLoginIndexRoute
+  '/store-admin/daybook': typeof StoreAdminAuthenticatedDaybookIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/store-admin/_authenticated': typeof StoreAdminAuthenticatedRouteWithChildren
+  '/zustand/': typeof ZustandIndexRoute
   '/store-admin/login/': typeof StoreAdminLoginIndexRoute
+  '/store-admin/_authenticated/daybook/': typeof StoreAdminAuthenticatedDaybookIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/store-admin/login/'
+  fullPaths:
+    | '/'
+    | '/store-admin'
+    | '/zustand/'
+    | '/store-admin/login/'
+    | '/store-admin/daybook/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/store-admin/login'
-  id: '__root__' | '/' | '/dashboard' | '/store-admin/login/'
+  to:
+    | '/'
+    | '/store-admin'
+    | '/zustand'
+    | '/store-admin/login'
+    | '/store-admin/daybook'
+  id:
+    | '__root__'
+    | '/'
+    | '/store-admin/_authenticated'
+    | '/zustand/'
+    | '/store-admin/login/'
+    | '/store-admin/_authenticated/daybook/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
+  StoreAdminAuthenticatedRoute: typeof StoreAdminAuthenticatedRouteWithChildren
+  ZustandIndexRoute: typeof ZustandIndexRoute
   StoreAdminLoginIndexRoute: typeof StoreAdminLoginIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zustand/': {
+      id: '/zustand/'
+      path: '/zustand'
+      fullPath: '/zustand/'
+      preLoaderRoute: typeof ZustandIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store-admin/_authenticated': {
+      id: '/store-admin/_authenticated'
+      path: '/store-admin'
+      fullPath: '/store-admin'
+      preLoaderRoute: typeof StoreAdminAuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/store-admin/login/': {
@@ -82,12 +125,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreAdminLoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/store-admin/_authenticated/daybook/': {
+      id: '/store-admin/_authenticated/daybook/'
+      path: '/daybook'
+      fullPath: '/store-admin/daybook/'
+      preLoaderRoute: typeof StoreAdminAuthenticatedDaybookIndexRouteImport
+      parentRoute: typeof StoreAdminAuthenticatedRoute
+    }
   }
 }
 
+interface StoreAdminAuthenticatedRouteChildren {
+  StoreAdminAuthenticatedDaybookIndexRoute: typeof StoreAdminAuthenticatedDaybookIndexRoute
+}
+
+const StoreAdminAuthenticatedRouteChildren: StoreAdminAuthenticatedRouteChildren =
+  {
+    StoreAdminAuthenticatedDaybookIndexRoute:
+      StoreAdminAuthenticatedDaybookIndexRoute,
+  }
+
+const StoreAdminAuthenticatedRouteWithChildren =
+  StoreAdminAuthenticatedRoute._addFileChildren(
+    StoreAdminAuthenticatedRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
+  StoreAdminAuthenticatedRoute: StoreAdminAuthenticatedRouteWithChildren,
+  ZustandIndexRoute: ZustandIndexRoute,
   StoreAdminLoginIndexRoute: StoreAdminLoginIndexRoute,
 }
 export const routeTree = rootRouteImport

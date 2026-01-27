@@ -139,7 +139,7 @@
     @apply bg-background text-foreground font-sans;
     font-weight: 400; /* Inter 400 for body text */
   }
-  
+
   /* Headings: Inter 600 / 700 */
   h1 {
     font-weight: 700; /* Inter 700 for h1 */
@@ -150,17 +150,17 @@
   h3, h4, h5, h6 {
     font-weight: 600; /* Inter 600 for h3-h6 */
   }
-  
+
   /* Body text variations: Inter 400 / 500 */
   p {
     font-weight: 400; /* Inter 400 for default body text */
   }
-  
+
   /* Buttons: Inter 500-600 */
   button {
     font-weight: 500; /* Inter 500 for buttons (default) */
   }
-  
+
   /* Table numbers: Inter 500 */
   table td,
   table th {
@@ -185,7 +185,7 @@
   .font-mono {
     font-family: var(--font-geist-mono);
   }
-  
+
   /* Body text weight utilities: Inter 400 / 500 */
   .font-body {
     font-weight: 400; /* Inter 400 for regular body text */
@@ -193,12 +193,12 @@
   .font-body-medium {
     font-weight: 500; /* Inter 500 for emphasized body text */
   }
-  
+
   /* Table numbers: Inter 500 */
   .font-table-number {
     font-weight: 500; /* Inter 500 for table numbers */
   }
-  
+
   /* Button weight utilities: Inter 500-600 */
   .font-button {
     font-weight: 500; /* Inter 500 for buttons (default) */
@@ -223,5 +223,14 @@
 
   [data-sonner-toast][data-type='warning'] [data-description] {
     color: hsl(38 92% 50%) !important;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

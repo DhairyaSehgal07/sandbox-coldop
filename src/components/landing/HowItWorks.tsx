@@ -19,13 +19,13 @@ const HowItWorks = ({ title, subtitle, steps }: HowItWorksProps) => {
       {/* DESKTOP */}
       <section
         id="how-it-works"
-        className="hidden sm:block mt-16 px-8 sm:px-16 lg:px-24"
+        className="hidden sm:block mt-16 px-8 sm:px-16 lg:px-24 bg-background"
       >
         <div className="mx-auto max-w-[75rem]">
           <span className="font-custom mb-4 block text-lg font-medium uppercase tracking-[0.075rem] text-foreground">
             {title}
           </span>
-          <h2 className="font-custom mb-8 text-4xl font-bold tracking-tighter text-[#333] lg:text-5xl">
+          <h2 className="font-custom mb-8 text-4xl font-bold tracking-tighter text-foreground lg:text-5xl">
             {subtitle}
           </h2>
         </div>
@@ -36,15 +36,15 @@ const HowItWorks = ({ title, subtitle, steps }: HowItWorksProps) => {
               {/* TEXT (EVEN) */}
               {index % 2 === 0 && (
                 <div className="step-text-box">
-                  <p className="font-custom my-3 text-8xl font-semibold text-gray-200">
+                  <p className="font-custom my-3 text-8xl font-semibold text-muted">
                     <span className="cursor-pointer transition-colors duration-200 hover:text-primary/85 focus:outline-none focus-visible:text-primary/85">
                       {step.number}
                     </span>
                   </p>
-                  <h3 className="font-custom mb-6 text-2xl font-semibold lg:text-3xl">
+                  <h3 className="font-custom mb-6 text-2xl font-semibold text-foreground lg:text-3xl">
                     {step.heading}
                   </h3>
-                  <p className="font-custom text-xl leading-loose">
+                  <p className="font-custom text-xl leading-loose text-muted-foreground">
                     {step.description}
                   </p>
                 </div>
@@ -69,15 +69,15 @@ const HowItWorks = ({ title, subtitle, steps }: HowItWorksProps) => {
               {/* TEXT (ODD) */}
               {index % 2 === 1 && (
                 <div className="step-text-box">
-                  <p className="font-custom my-3 text-8xl font-semibold text-gray-200">
+                  <p className="font-custom my-3 text-8xl font-semibold text-muted">
                     <span className="cursor-pointer transition-colors duration-200 hover:text-primary/85 focus:outline-none focus-visible:text-primary/85">
                       {step.number}
                     </span>
                   </p>
-                  <h3 className="font-custom mb-6 text-2xl font-semibold lg:text-3xl">
+                  <h3 className="font-custom mb-6 text-2xl font-semibold text-foreground lg:text-3xl">
                     {step.heading}
                   </h3>
-                  <p className="font-custom text-xl leading-loose">
+                  <p className="font-custom text-xl leading-loose text-muted-foreground">
                     {step.description}
                   </p>
                 </div>
@@ -88,12 +88,12 @@ const HowItWorks = ({ title, subtitle, steps }: HowItWorksProps) => {
       </section>
 
       {/* MOBILE */}
-      <section className="sm:hidden mt-10 px-8">
+      <section className="sm:hidden mt-10 px-8 bg-background">
         <div className="mx-auto max-w-[75rem]">
           <span className="font-custom mb-2 block text-base font-medium uppercase tracking-[0.075rem] text-foreground">
             {title}
           </span>
-          <h2 className="font-custom mb-8 text-4xl font-bold tracking-tighter text-[#333]">
+          <h2 className="font-custom mb-8 text-4xl font-bold tracking-tighter text-foreground">
             {subtitle}
           </h2>
         </div>
@@ -115,13 +115,13 @@ const HowItWorks = ({ title, subtitle, steps }: HowItWorksProps) => {
               </div>
 
               <div className="step-text-box mt-6">
-                <p className="font-custom mb-3 text-7xl font-semibold text-gray-200">
+                <p className="font-custom mb-3 text-7xl font-semibold text-muted">
                   {step.number}
                 </p>
-                <h3 className="font-custom mb-6 text-xl font-semibold">
+                <h3 className="font-custom mb-6 text-xl font-semibold text-foreground">
                   {step.heading}
                 </h3>
-                <p className="font-custom text-base leading-loose">
+                <p className="font-custom text-base leading-loose text-muted-foreground">
                   {step.description}
                 </p>
               </div>

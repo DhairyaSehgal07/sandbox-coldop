@@ -1,19 +1,35 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 
 import LoginForm from '@/components/auth/login';
+import { useStoreAdminLogin } from '@/services/store-admin/auth/useStoreAdminLogin';
 
 export const Route = createFileRoute('/store-admin/login/')({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
+    return {
+      redirect: search.redirect ? (search.redirect as string) : undefined,
+    };
+  },
+  beforeLoad: ({ context }) => {
+    // If user is already authenticated, redirect to daybook
+    if (context.auth.isAuthenticated) {
+      throw redirect({
+        to: '/store-admin/daybook',
+        replace: true,
+      });
+    }
+  },
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { mutate: login, isPending } = useStoreAdminLogin();
+
   const handleSubmit = (values: { mobileNumber: string; password: string }) => {
-    console.log('Form submitted:', values);
-    // TODO: Implement actual login logic
+    login(values);
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-secondary/30 relative overflow-hidden px-4 sm:px-0">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden px-4 sm:px-0">
       {/* Background pattern elements */}
       <div className="absolute inset-0 w-full h-full">
         <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-primary/5"></div>
@@ -47,7 +63,7 @@ function RouteComponent() {
 
       {/* Form Container - full width on mobile */}
       <div className="w-full sm:max-w-md z-10 py-8 sm:py-0">
-        <LoginForm onSubmit={handleSubmit} />
+        <LoginForm onSubmit={handleSubmit} isLoading={isPending} />
       </div>
     </div>
   );

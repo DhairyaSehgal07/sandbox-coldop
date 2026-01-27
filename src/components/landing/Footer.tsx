@@ -46,7 +46,7 @@ const Footer = ({
   socialLinks,
 }: FooterProps) => {
   return (
-    <footer className="border-t border-gray-200 bg-secondary">
+    <footer className="border-t border-border bg-background">
       {/* Main footer */}
       <div className="mx-auto max-w-[75rem] px-8 py-16 sm:px-8 lg:px-16">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-5 lg:gap-12">
@@ -59,7 +59,7 @@ const Footer = ({
               <img src={logoSrc} alt={logoAlt} className="h-10 w-auto" />
             </Link>
 
-            <p className="font-custom max-w-md text-sm leading-relaxed text-gray-600">
+            <p className="font-custom max-w-md text-sm leading-relaxed text-muted-foreground">
               {description}
             </p>
 
@@ -72,7 +72,7 @@ const Footer = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="group p-2 text-gray-500 transition-all duration-200 ease-in-out hover:text-primary hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
+                  className="group p-2 text-muted-foreground transition-all duration-200 ease-in-out hover:text-primary hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
                 >
                   {social.icon}
                 </a>
@@ -82,12 +82,12 @@ const Footer = ({
 
           {/* Contact */}
           <div className="space-y-4">
-            <h3 className="font-custom text-sm font-semibold uppercase tracking-wider text-gray-900">
+            <h3 className="font-custom text-sm font-semibold uppercase tracking-wider text-foreground">
               Contact us
             </h3>
 
             <div className="space-y-3 text-sm">
-              <p className="font-custom leading-relaxed text-gray-600">
+              <p className="font-custom leading-relaxed text-muted-foreground">
                 {contact.address}
               </p>
 
@@ -96,7 +96,7 @@ const Footer = ({
                   <p key={phone}>
                     <a
                       href={`tel:${phone}`}
-                      className="text-gray-600 transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
+                      className="text-muted-foreground transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
                     >
                       {phone}
                       <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 ease-in-out group-hover:w-full group-focus-visible:w-full" />
@@ -107,7 +107,7 @@ const Footer = ({
                 <p>
                   <a
                     href={`mailto:${contact.email}`}
-                    className="text-gray-600 transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
+                    className="text-muted-foreground transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
                   >
                     {contact.email}
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 ease-in-out group-hover:w-full group-focus-visible:w-full" />
@@ -120,7 +120,7 @@ const Footer = ({
           {/* Navigation */}
           {navColumns.map((column) => (
             <div key={column.title} className="space-y-4">
-              <h3 className="font-custom text-sm font-semibold uppercase tracking-wider text-gray-900">
+              <h3 className="font-custom text-sm font-semibold uppercase tracking-wider text-foreground">
                 {column.title}
               </h3>
 
@@ -136,7 +136,7 @@ const Footer = ({
                       <Link
                         to={path as '/'}
                         hash={hash}
-                        className="font-custom text-sm text-gray-600 transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
+                        className="font-custom text-sm text-muted-foreground transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
                       >
                         {link.text}
                         <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 ease-in-out group-hover:w-full group-focus-visible:w-full" />
@@ -151,31 +151,31 @@ const Footer = ({
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-gray-200 bg-white/50">
+      <div className="border-t border-border bg-card">
         <div className="mx-auto max-w-[75rem] px-8 py-6 sm:px-8 lg:px-16">
           <div className="flex flex-col items-center justify-between space-y-3 sm:flex-row sm:space-y-0">
-            <p className="font-custom text-sm text-gray-500">
+            <p className="font-custom text-sm text-muted-foreground">
               © {year} {companyName}. All rights reserved.
             </p>
 
             <div className="flex space-x-6 text-sm">
               <Link
                 to={'/privacy' as '/'}
-                className="font-custom text-gray-500 transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
+                className="font-custom text-muted-foreground transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
               >
                 Privacy Policy
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 ease-in-out group-hover:w-full group-focus-visible:w-full" />
               </Link>
               <Link
                 to={'/support' as '/'}
-                className="font-custom text-gray-500 transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
+                className="font-custom text-muted-foreground transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
               >
                 Terms of Service
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 ease-in-out group-hover:w-full group-focus-visible:w-full" />
               </Link>
               <Link
                 to={'/cookies' as '/'}
-                className="font-custom text-gray-500 transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
+                className="font-custom text-muted-foreground transition-colors duration-200 hover:text-primary relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded px-1"
               >
                 Cookie Policy
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-200 ease-in-out group-hover:w-full group-focus-visible:w-full" />

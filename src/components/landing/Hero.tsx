@@ -11,15 +11,15 @@ const Hero = ({ data }: HeroProps) => {
   const { heading, description, ctaButtons, customerStats, heroImage } = data;
 
   return (
-    <section className="bg-secondary px-4 pb-16 pt-6 sm:px-8 sm:py-24">
+    <section className="bg-secondary dark:bg-background/80 px-4 pb-16 pt-6 sm:px-8 sm:py-24">
       <div className="mx-auto grid max-w-[75rem] grid-cols-1 items-center gap-8 py-8 sm:gap-12 md:gap-16 md:py-2 lg:grid-cols-2 lg:gap-24 xl:max-w-[81.25rem]">
         {/* LEFT */}
         <div className="text-center lg:text-left">
-          <h1 className="mb-8 font-custom text-[2.1rem] font-bold leading-[1.05] tracking-[-0.5px] text-[#333] xl:text-[3rem]">
+          <h1 className="mb-8 font-custom text-[2.1rem] font-bold leading-[1.05] tracking-[-0.5px] text-[#333] dark:text-gray-100 xl:text-[3rem]">
             {heading}
           </h1>
 
-          <p className="mb-12 font-custom text-base font-normal leading-[1.6] md:text-xl">
+          <p className="mb-12 font-custom text-base font-normal leading-[1.6] text-gray-700 dark:text-gray-300 md:text-xl">
             {description}
           </p>
 
@@ -35,7 +35,6 @@ const Hero = ({ data }: HeroProps) => {
                   key={index}
                   variant="default"
                   size="lg"
-                  weight="bold"
                   asChild
                   className="font-custom px-4 py-2 text-lg sm:px-8 sm:py-4 sm:text-xl"
                 >

@@ -26,9 +26,10 @@ const formSchema = z.object({
 
 interface LoginFormProps {
   onSubmit?: (values: { mobileNumber: string; password: string }) => void;
+  isLoading?: boolean;
 }
 
-const LoginForm = ({ onSubmit }: LoginFormProps) => {
+const LoginForm = ({ onSubmit, isLoading = false }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
@@ -81,6 +82,7 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
                       placeholder="Enter your 10-digit mobile number"
                       autoComplete="tel"
                       className="font-custom"
+                      disabled={isLoading}
                     />
                     {isInvalid && (
                       <FieldError
@@ -118,14 +120,16 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
                         placeholder="Enter your password"
                         autoComplete="current-password"
                         className="font-custom pr-10"
+                        disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded p-1"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded p-1"
                         aria-label={
                           showPassword ? 'Hide password' : 'Show password'
                         }
+                        disabled={isLoading}
                       >
                         {showPassword ? (
                           <EyeOff className="h-5 w-5" />
@@ -154,8 +158,9 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
             variant="default"
             size="lg"
             className="font-custom w-full"
+            disabled={isLoading}
           >
-            Sign In
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </Button>
         </form>
       </CardContent>

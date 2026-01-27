@@ -28,7 +28,7 @@ const DemoVideo = ({
   return (
     <section
       id="demo"
-      className="relative w-full overflow-hidden bg-gradient-to-b from-white via-secondary/30 to-white py-20 sm:py-32"
+      className="relative w-full overflow-hidden bg-gradient-to-b from-background via-secondary/30 to-background py-20 sm:py-32"
     >
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
@@ -39,17 +39,17 @@ const DemoVideo = ({
           <span className="font-custom mb-6 block text-base font-medium uppercase tracking-[0.075rem] text-foreground">
             {eyebrow}
           </span>
-          <h2 className="font-custom mb-8 text-4xl font-bold tracking-tighter text-[#333] md:text-5xl">
+          <h2 className="font-custom mb-8 text-4xl font-bold tracking-tighter text-foreground md:text-5xl">
             {title}
           </h2>
-          <p className="font-custom mx-auto max-w-[50rem] text-lg leading-[1.8] text-[#6f6f6f]">
+          <p className="font-custom mx-auto max-w-[50rem] text-lg leading-[1.8] text-muted-foreground">
             {description}
           </p>
         </div>
 
         {/* Video */}
         <div className="mx-auto max-w-4xl">
-          <div className="overflow-hidden rounded-[11px] bg-gray-900 shadow-2xl">
+          <div className="overflow-hidden rounded-[11px] bg-card shadow-2xl">
             <div className="aspect-video">
               <iframe
                 src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
@@ -65,10 +65,10 @@ const DemoVideo = ({
 
           {/* Video details */}
           <div className="mt-12 text-center">
-            <h3 className="font-custom mb-4 text-2xl font-semibold text-[#333]">
+            <h3 className="font-custom mb-4 text-2xl font-semibold text-foreground">
               {detailsTitle}
             </h3>
-            <p className="font-custom mx-auto max-w-2xl leading-relaxed text-[#6f6f6f]">
+            <p className="font-custom mx-auto max-w-2xl leading-relaxed text-muted-foreground">
               {detailsDescription}
             </p>
           </div>
@@ -79,7 +79,6 @@ const DemoVideo = ({
           <Button
             variant="default"
             size="lg"
-            weight="bold"
             asChild
             className="font-custom px-8 py-4 text-xl shadow-lg"
           >
