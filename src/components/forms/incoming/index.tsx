@@ -16,29 +16,39 @@ import {
   type Option,
 } from '@/components/forms/search-selector';
 import { AddFarmerModal } from '@/components/forms/add-farmer-modal';
+import { useGetAllFarmers } from '@/services/store-admin/functions/useGetAllFarmers';
 
 type FieldErrors = Array<{ message?: string } | undefined>;
 
-/* -------------------------------------------------
-   TEMP MOCK DATA (so UI still works)
-------------------------------------------------- */
-
-const FARMER_OPTIONS: Option<string>[] = [
-  {
-    value: 'farmer-1',
-    label: 'Ramesh Kumar (Account #101)',
-    searchableText: 'Ramesh 101',
-  },
-  {
-    value: 'farmer-2',
-    label: 'Suresh Lal (Account #102)',
-    searchableText: 'Suresh 102',
-  },
-];
-
 export const IncomingForm = memo(function IncomingForm() {
+  const {
+    data: farmerLinks,
+    isLoading: isLoadingFarmers,
+    refetch: refetchFarmers,
+  } = useGetAllFarmers();
+
   const voucherNumberDisplay = '#1234';
   const gatePassNo = 1234;
+
+  // Transform farmer links to SearchSelector options (active only)
+  const farmerOptions: Option<string>[] = useMemo(() => {
+    if (!farmerLinks) return [];
+    return farmerLinks
+      .filter((link) => link.isActive)
+      .map((link) => ({
+        value: link._id,
+        label: `${link.farmerId.name} (Account #${link.accountNumber})`,
+        searchableText: `${link.farmerId.name} ${link.accountNumber} ${link.farmerId.mobileNumber} ${link.farmerId.address}`,
+      }));
+  }, [farmerLinks]);
+
+  const handleFarmerSelect = (value: string) => {
+    form.setFieldValue('farmerStorageLinkId', value);
+  };
+
+  const handleFarmerAdded = () => {
+    refetchFarmers();
+  };
 
   /* -------------------------------------------------
      ZOD SCHEMA
@@ -146,22 +156,60 @@ export const IncomingForm = memo(function IncomingForm() {
             }}
           />
 
-          {/* Farmer */}
+          {/* Farmer Selection */}
           <form.Field
             name="farmerStorageLinkId"
-            children={(field) => (
-              <Field>
-                <FieldLabel>Select Farmer</FieldLabel>
-
-                <SearchSelector
-                  options={FARMER_OPTIONS}
-                  onSelect={(v) => field.handleChange(v)}
-                  value={field.state.value}
-                />
-
-                <AddFarmerModal />
-              </Field>
-            )}
+            children={(field) => {
+              const hasSubmitError = Boolean(
+                field.state.meta.errorMap &&
+                'onSubmit' in field.state.meta.errorMap &&
+                field.state.meta.errorMap.onSubmit
+              );
+              const invalidFromValidation =
+                hasSubmitError ||
+                (field.state.meta.isTouched && !field.state.meta.isValid);
+              const isInvalid = invalidFromValidation && !field.state.value;
+              return (
+                <Field data-invalid={isInvalid}>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                    <div className="flex-1">
+                      <FieldLabel
+                        htmlFor="farmer-select"
+                        className="font-custom mb-2 block text-base font-semibold"
+                      >
+                        Enter Account Name (search and select)
+                      </FieldLabel>
+                      <SearchSelector
+                        id="farmer-select"
+                        options={farmerOptions}
+                        placeholder="Search or Create Farmer"
+                        searchPlaceholder="Search by name, account number, or mobile..."
+                        onSelect={handleFarmerSelect}
+                        value={field.state.value}
+                        loading={isLoadingFarmers}
+                        loadingMessage="Loading farmers..."
+                        emptyMessage="No farmers found"
+                        className="w-full"
+                        buttonClassName="w-full justify-between"
+                      />
+                    </div>
+                    <AddFarmerModal
+                      links={farmerLinks ?? []}
+                      onFarmerAdded={handleFarmerAdded}
+                    />
+                  </div>
+                  {isInvalid && (
+                    <FieldError
+                      errors={
+                        field.state.meta.errors as Array<
+                          { message?: string } | undefined
+                        >
+                      }
+                    />
+                  )}
+                </Field>
+              );
+            }}
           />
 
           {/* Variety */}

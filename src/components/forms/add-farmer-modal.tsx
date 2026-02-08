@@ -1,4 +1,4 @@
-import { memo, useState, useMemo } from 'react';
+import { memo, useState, useMemo, useEffect } from 'react';
 import { useForm } from '@tanstack/react-form';
 import * as z from 'zod';
 import { Info, Plus } from 'lucide-react';
@@ -26,27 +26,94 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useQuickAddFarmer } from '@/services/store-admin/functions/useQuickAddFarmer';
+import { useStore } from '@/stores/store';
+import type { FarmerStorageLink } from '@/types/farmer';
 
 type FieldErrors = Array<{ message?: string } | undefined>;
 
-/* -------------------------------------------------
-   UI-ONLY MODAL
-------------------------------------------------- */
+interface AddFarmerModalProps {
+  links?: FarmerStorageLink[];
+  onFarmerAdded?: () => void;
+}
 
-export const AddFarmerModal = memo(function AddFarmerModal() {
+export const AddFarmerModal = memo(function AddFarmerModal({
+  links = [],
+  onFarmerAdded,
+}: AddFarmerModalProps) {
+  const { mutate: quickAddFarmer, isPending } = useQuickAddFarmer();
+  const { coldStorage, admin } = useStore();
   const [isOpen, setIsOpen] = useState(false);
 
   /* ----------------------------------
-     ZOD SCHEMA (BASIC)
+     Used numbers (from links)
+  ---------------------------------- */
+
+  const usedAccountNumbers = useMemo(() => {
+    return links
+      .map((l) => l.accountNumber.toString())
+      .filter((acc, i, s) => s.indexOf(acc) === i)
+      .sort((a, b) => Number(a) - Number(b));
+  }, [links]);
+
+  const usedMobileNumbers = useMemo(() => {
+    return links
+      .map((l) => l.farmerId.mobileNumber)
+      .filter((mob, i, s) => s.indexOf(mob) === i)
+      .sort();
+  }, [links]);
+
+  const nextAccountNumber = useMemo(() => {
+    if (usedAccountNumbers.length === 0) return 1;
+    const latest = Number(usedAccountNumbers[usedAccountNumbers.length - 1]);
+    return latest + 1;
+  }, [usedAccountNumbers]);
+
+  /* ----------------------------------
+     ZOD SCHEMA
   ---------------------------------- */
 
   const formSchema = useMemo(
     () =>
       z.object({
-        name: z.string().min(1, 'Name is required'),
+        name: z
+          .string()
+          .transform((val) => {
+            const trimmed = val.trim();
+            if (!trimmed) return trimmed;
+            return (
+              trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+            );
+          })
+          .refine((val) => val.length > 0, { message: 'Name is required' }),
+
         address: z.string().min(1, 'Address is required'),
-        mobileNumber: z.string().length(10, 'Mobile number must be 10 digits'),
-        accountNumber: z.string().min(1, 'Account number is required'),
+
+        mobileNumber: z
+          .string()
+          .length(10, 'Mobile number must be 10 digits')
+          .refine((val) => !usedMobileNumbers.includes(val), {
+            message: 'Mobile number already in use',
+          }),
+
+        accountNumber: z
+          .string()
+          .transform((val) =>
+            val === '' || Number.isNaN(Number(val)) ? '' : val
+          )
+          .pipe(
+            z
+              .string()
+              .min(1, 'Please enter an account number')
+              .refine((val) => {
+                const num = Number(val);
+                return !Number.isNaN(num) && num > 0;
+              }, 'Please enter an account number')
+              .refine((val) => !usedAccountNumbers.includes(val), {
+                message: 'This account number is already taken',
+              })
+          ),
+
         costPerBag: z
           .string()
           .min(1, 'Cost per bag is required')
@@ -55,12 +122,13 @@ export const AddFarmerModal = memo(function AddFarmerModal() {
             'Cost per bag cannot be negative'
           )
           .transform(Number),
+
         openingBalance: z
           .string()
           .refine((s) => s === '' || !isNaN(Number(s)), 'Invalid number')
           .transform((s) => (s === '' ? 0 : Number(s))),
       }),
-    []
+    [usedAccountNumbers, usedMobileNumbers]
   );
 
   /* ----------------------------------
@@ -78,15 +146,45 @@ export const AddFarmerModal = memo(function AddFarmerModal() {
     },
 
     validators: {
+      onChange: formSchema,
+      onBlur: formSchema,
       onSubmit: formSchema,
     },
 
     onSubmit: async ({ value }) => {
-      console.log('ADD FARMER PAYLOAD 👉', value);
-      setIsOpen(false);
-      form.reset();
+      if (!coldStorage?._id || !admin?._id) return;
+
+      quickAddFarmer(
+        {
+          name: value.name,
+          address: value.address,
+          mobileNumber: value.mobileNumber,
+          coldStorageId: coldStorage._id,
+          linkedById: admin._id,
+          accountNumber: Number(value.accountNumber),
+          costPerBag: Number(value.costPerBag),
+          openingBalance: Number(value.openingBalance),
+        },
+        {
+          onSuccess: () => {
+            form.reset();
+            setIsOpen(false);
+            onFarmerAdded?.();
+          },
+        }
+      );
     },
   });
+
+  /* ----------------------------------
+     When modal opens: set suggested account number
+  ---------------------------------- */
+
+  useEffect(() => {
+    if (isOpen) {
+      form.setFieldValue('accountNumber', nextAccountNumber.toString());
+    }
+  }, [isOpen, nextAccountNumber, form]);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -150,20 +248,52 @@ export const AddFarmerModal = memo(function AddFarmerModal() {
                         </TooltipTrigger>
 
                         <TooltipContent className="max-w-xs">
-                          Account numbers must be unique.
+                          {usedAccountNumbers.length > 0 ? (
+                            <span>
+                              Used account numbers:{' '}
+                              {usedAccountNumbers.join(', ')}
+                            </span>
+                          ) : (
+                            'No account numbers in use'
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     </div>
 
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="number"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={isInvalid}
-                    />
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          type="number"
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder={`Suggested: ${nextAccountNumber}`}
+                          aria-invalid={isInvalid}
+                          className="flex-1"
+                        />
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            form.setFieldValue(
+                              'accountNumber',
+                              nextAccountNumber.toString()
+                            )
+                          }
+                        >
+                          Use suggested ({nextAccountNumber})
+                        </Button>
+                      </div>
+
+                      <p className="text-muted-foreground text-xs">
+                        Enter any positive number. Duplicate values are not
+                        allowed.
+                      </p>
+                    </div>
 
                     {isInvalid && (
                       <FieldError
@@ -198,6 +328,7 @@ export const AddFarmerModal = memo(function AddFarmerModal() {
                           e.target.value.replace(/\D/g, '').slice(0, 10)
                         )
                       }
+                      placeholder="Enter 10-digit mobile number"
                       maxLength={10}
                       aria-invalid={isInvalid}
                     />
@@ -355,7 +486,9 @@ export const AddFarmerModal = memo(function AddFarmerModal() {
               </Button>
             </DialogClose>
 
-            <Button type="submit">Add Farmer</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Adding...' : 'Add Farmer'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
