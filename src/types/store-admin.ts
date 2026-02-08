@@ -1,3 +1,5 @@
+import type { Preferences } from './preferences';
+
 export type Role = 'Admin' | 'Manager' | 'Staff';
 
 export interface StoreAdmin {
@@ -37,13 +39,11 @@ export interface StoreAdminLoginData {
       isPaid: boolean;
       isActive: boolean;
       plan: string;
-      admins: string[];
-      links: string[];
-      incomingOrders: string[];
-      outgoingOrders: string[];
       createdAt: string;
       updatedAt: string;
-      __v: number;
+      __v?: number;
+      /** Populated by API; when present, preferences are nested here */
+      preferencesId?: string | Preferences;
     };
   };
   token: string;

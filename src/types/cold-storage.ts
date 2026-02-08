@@ -17,9 +17,4 @@ export interface ColdStorage {
   updatedAt: string;
 
   preferencesId?: string;
-
-  admins: string[]; // StoreAdmin IDs
-  links: string[]; // FarmerStorageLink IDs
-  incomingOrders: string[]; // IncomingOrder IDs
-  outgoingOrders: string[]; // OutgoingOrder IDs
 }

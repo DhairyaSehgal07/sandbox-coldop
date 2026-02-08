@@ -79,7 +79,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
   return (
     <div className="space-y-3">
-      <Label htmlFor={id} className="text-base font-medium">
+      <Label
+        htmlFor={id}
+        className="font-custom mb-2 block text-base font-semibold"
+      >
         {label}
       </Label>
       <div className="flex items-center gap-3">

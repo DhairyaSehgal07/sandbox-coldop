@@ -87,7 +87,7 @@ export const AddFarmerModal = memo(function AddFarmerModal({
           })
           .refine((val) => val.length > 0, { message: 'Name is required' }),
 
-        address: z.string().min(1, 'Address is required'),
+        address: z.string().trim().min(1, 'Address is required'),
 
         mobileNumber: z
           .string()

@@ -41,6 +41,7 @@ const navigationItems: NavigationItem[] = [
   {
     name: 'Daybook',
     href: '/store-admin/daybook',
+    activePaths: ['/store-admin/incoming'],
     icon: BookOpen,
   },
   {
@@ -72,9 +73,9 @@ const SidebarHeaderContent = memo(() => {
   return (
     <SidebarHeader>
       <div className="flex items-center gap-2 px-2 py-2">
-        <h1 className="text-lg font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+        <h1 className="text-sidebar-foreground text-lg font-semibold group-data-[collapsible=icon]:hidden">
           Coldop
-          <span className="text-[10px] ml-1 font-medium text-muted-foreground">
+          <span className="text-muted-foreground ml-1 text-[10px] font-medium">
             BETA
           </span>
         </h1>

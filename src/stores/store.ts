@@ -4,10 +4,12 @@ import { persist } from 'zustand/middleware';
 
 import type { StoreAdmin } from '@/types/store-admin';
 import type { ColdStorage } from '@/types/cold-storage';
+import type { Preferences } from '@/types/preferences';
 
 interface StoreState {
   admin: Omit<StoreAdmin, 'password'> | null;
   coldStorage: ColdStorage | null;
+  preferences: Preferences | null;
   token: string | null;
   isLoading: boolean;
   _hasHydrated: boolean;
@@ -15,7 +17,8 @@ interface StoreState {
   setAdminData: (
     admin: Omit<StoreAdmin, 'password'>,
     coldStorage: ColdStorage,
-    token: string
+    token: string,
+    preferences: Preferences | null
   ) => void;
 
   clearAdminData: () => void;
@@ -23,7 +26,10 @@ interface StoreState {
   setHasHydrated: (state: boolean) => void;
 }
 
-type PersistedState = Pick<StoreState, 'admin' | 'coldStorage' | 'token'>;
+type PersistedState = Pick<
+  StoreState,
+  'admin' | 'coldStorage' | 'preferences' | 'token'
+>;
 
 // ⏳ 1 week expiry in milliseconds
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -70,14 +76,16 @@ export const useStore = create(
     (set, get) => ({
       admin: null,
       coldStorage: null,
+      preferences: null,
       token: null,
       isLoading: false,
       _hasHydrated: false,
 
-      setAdminData: (admin, coldStorage, token) => {
+      setAdminData: (admin, coldStorage, token, preferences) => {
         set({
           admin,
           coldStorage,
+          preferences: preferences ?? null,
           token,
           isLoading: false,
         });
@@ -87,6 +95,7 @@ export const useStore = create(
         set({
           admin: null,
           coldStorage: null,
+          preferences: null,
           token: null,
         }),
 
@@ -101,6 +110,7 @@ export const useStore = create(
       partialize: (state): PersistedState => ({
         admin: state.admin,
         coldStorage: state.coldStorage,
+        preferences: state.preferences,
         token: state.token,
       }),
 

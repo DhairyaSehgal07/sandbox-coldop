@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useStore } from '@/stores/store';
 import type { ColdStorage } from '@/types/cold-storage';
+import type { Preferences } from '@/types/preferences';
 
 /** User-friendly message for login errors (wrong credentials, network, etc.) */
 function getLoginErrorMessage(error: AxiosError<{ message?: string }>): string {
@@ -76,6 +77,13 @@ export const useStoreAdminLogin = () => {
 
       const { storeAdmin, token } = data.data;
 
+      // Preferences come from coldStorageId.preferencesId when populated by the API
+      const preferencesFromApi =
+        typeof storeAdmin.coldStorageId.preferencesId === 'object' &&
+        storeAdmin.coldStorageId.preferencesId !== null
+          ? storeAdmin.coldStorageId.preferencesId
+          : undefined;
+
       // Transform the API response to match our StoreAdmin type
       // The API returns coldStorageId as an object, but our type expects it as a string
       const coldStorage: ColdStorage = {
@@ -88,12 +96,16 @@ export const useStoreAdminLogin = () => {
         isPaid: storeAdmin.coldStorageId.isPaid,
         isActive: storeAdmin.coldStorageId.isActive,
         plan: storeAdmin.coldStorageId.plan as ColdStorage['plan'],
-        admins: storeAdmin.coldStorageId.admins,
-        links: storeAdmin.coldStorageId.links,
-        incomingOrders: storeAdmin.coldStorageId.incomingOrders,
-        outgoingOrders: storeAdmin.coldStorageId.outgoingOrders,
         createdAt: storeAdmin.coldStorageId.createdAt,
         updatedAt: storeAdmin.coldStorageId.updatedAt,
+        preferencesId:
+          typeof storeAdmin.coldStorageId.preferencesId === 'object' &&
+          storeAdmin.coldStorageId.preferencesId !== null &&
+          '_id' in storeAdmin.coldStorageId.preferencesId
+            ? storeAdmin.coldStorageId.preferencesId._id
+            : typeof storeAdmin.coldStorageId.preferencesId === 'string'
+              ? storeAdmin.coldStorageId.preferencesId
+              : undefined,
       };
 
       // Create StoreAdmin with coldStorageId as string
@@ -110,8 +122,21 @@ export const useStoreAdminLogin = () => {
         updatedAt: storeAdmin.updatedAt,
       };
 
-      // Store admin + coldStorage + token
-      setAdminData(admin, coldStorage, token);
+      // Normalise preferences (API may omit or use defaults)
+      const prefs: Preferences | null = preferencesFromApi
+        ? {
+            _id: preferencesFromApi._id,
+            commodities: preferencesFromApi.commodities ?? [],
+            reportFormat: preferencesFromApi.reportFormat ?? 'default',
+            showFinances: preferencesFromApi.showFinances ?? true,
+            customFields: preferencesFromApi.customFields,
+            createdAt: preferencesFromApi.createdAt,
+            updatedAt: preferencesFromApi.updatedAt,
+          }
+        : null;
+
+      // Store admin + coldStorage + token + preferences
+      setAdminData(admin, coldStorage, token, prefs);
 
       toast.success(data.message || 'Logged in successfully!');
 
