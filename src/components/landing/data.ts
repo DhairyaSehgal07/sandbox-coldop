@@ -261,7 +261,7 @@ export const demoVideoData: DemoVideoData = {
   title: 'Watch how Coldop works',
   description:
     'Get a quick overview of how our platform helps you manage your cold storage operations efficiently.',
-  videoId: 'dQw4w9WgXcQ', // Placeholder - replace with actual video ID
+  videoId: 'aCQ3rb-K_m0',
   videoTitle: 'Coldop Platform Demo',
   detailsTitle: 'Complete Cold Storage Management',
   detailsDescription:
@@ -316,7 +316,7 @@ export const footerData: FooterData = {
     'The complete cold storage management platform. Mobile app, web dashboard, WhatsApp updates, and instant receipt printing — all in one system.',
   contact: {
     address: '172 New Jawahar Nagar, Jalandhar',
-    phones: ['+91 9877741375', '+91 9646996729'],
+    phones: ['+91 9877741375', '+91 98778069258'],
     email: 'coldop.app@gmail.com',
   },
   navColumns: [
