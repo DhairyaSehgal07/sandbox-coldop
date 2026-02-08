@@ -11,6 +11,35 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useStore } from '@/stores/store';
 import type { ColdStorage } from '@/types/cold-storage';
 
+/** User-friendly message for login errors (wrong credentials, network, etc.) */
+function getLoginErrorMessage(error: AxiosError<{ message?: string }>): string {
+  const status = error.response?.status;
+  const apiMessage = error.response?.data?.message;
+
+  if (apiMessage && typeof apiMessage === 'string' && apiMessage.trim()) {
+    return apiMessage.trim();
+  }
+  if (status === 401) {
+    return 'Invalid mobile number or password. Please try again.';
+  }
+  if (status === 403) {
+    return 'Access denied. Your account may be locked or inactive.';
+  }
+  if (status && status >= 500) {
+    return 'Something went wrong on our end. Please try again later.';
+  }
+  if (
+    error.code === 'ECONNABORTED' ||
+    error.message?.toLowerCase().includes('timeout')
+  ) {
+    return 'Request timed out. Please check your connection and try again.';
+  }
+  if (error.code === 'ERR_NETWORK' || !error.response) {
+    return 'Unable to connect. Please check your internet and try again.';
+  }
+  return 'Login failed. Please check your credentials and try again.';
+}
+
 export const useStoreAdminLogin = () => {
   const navigate = useNavigate();
   const search = useSearch({ from: '/store-admin/login/' });
@@ -39,7 +68,9 @@ export const useStoreAdminLogin = () => {
       setLoading(false);
 
       if (!data.success || !data.data) {
-        toast.error(data.message || 'Login failed: No data received');
+        const message =
+          (typeof data.message === 'string' && data.message.trim()) || null;
+        toast.error(message || 'Invalid credentials. Please try again.');
         return;
       }
 
@@ -103,11 +134,12 @@ export const useStoreAdminLogin = () => {
 
     onError: (error) => {
       setLoading(false);
-
-      const errMsg =
-        error.response?.data?.message || error.message || 'Login failed';
-
+      const errMsg = getLoginErrorMessage(error);
       toast.error(errMsg);
+    },
+
+    onSettled: () => {
+      setLoading(false);
     },
   });
 };

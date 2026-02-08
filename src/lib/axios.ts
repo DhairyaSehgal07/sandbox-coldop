@@ -40,15 +40,23 @@ storeAdminAxiosClient.interceptors.response.use(
     }
 
     const { status } = error.response;
+    const requestUrl = error.config?.url ?? '';
 
     // Handle 401 Unauthorized
     if (status === 401) {
-      const { clearAdminData } = useStore.getState();
-      clearAdminData();
+      // Don't redirect when 401 is from a failed login attempt (wrong credentials).
+      // Let the mutation's onError show the error message instead.
+      const isLoginRequest =
+        requestUrl.includes('/store-admin/login') ||
+        window.location.pathname === '/store-admin/login';
 
-      // Avoid redirect loops
-      if (window.location.pathname !== '/auth/login') {
-        window.location.href = '/auth/login';
+      if (!isLoginRequest) {
+        const { clearAdminData } = useStore.getState();
+        clearAdminData();
+
+        if (window.location.pathname !== '/store-admin/login') {
+          window.location.href = '/store-admin/login';
+        }
       }
     }
 

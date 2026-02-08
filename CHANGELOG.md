@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-02-08
+
+### Added
+- Error page component for route errors
+- Not found (404) component for unknown routes
+- Empty UI component for empty states
+- Root route error and not-found handling
+
+### Fixed
+- Store admin login with wrong credentials now shows backend error message (e.g. invalid credentials) via toast instead of redirecting to the not-found page. Axios interceptor no longer redirects on 401 when the request is the login request; session-expired 401s still redirect to `/store-admin/login`.
+
 ## [0.1.0] - 2026-01-27
 
 ### Added
