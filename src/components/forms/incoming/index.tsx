@@ -25,17 +25,9 @@ import {
 } from '@/components/forms/search-selector';
 import { AddFarmerModal } from '@/components/forms/add-farmer-modal';
 import { useGetAllFarmers } from '@/services/store-admin/functions/useGetAllFarmers';
+import { useGetReceiptVoucherNumber } from '@/services/store-admin/functions/useGetVoucherNumber';
+import { useGetPreferences } from '@/services/preferences/useGetPreferences';
 import { useCreateIncomingGatePass } from '@/services/incoming-gate-pass/useCreateIncomingGatePass';
-
-/** Size labels for quantity entry (matches Enter Quantities layout) */
-const QUANTITY_SIZES = [
-  'Ration',
-  'Seed',
-  'Goli',
-  '12 Number',
-  'Cut Tok',
-  'Sugarfreeration',
-] as const;
 
 const DEFAULT_LOCATION = { chamber: '', floor: '', row: '' };
 
@@ -51,7 +43,32 @@ export const IncomingForm = memo(function IncomingForm() {
   } = useGetAllFarmers();
 
   const createGatePass = useCreateIncomingGatePass();
-  const voucherNumberDisplay = '#1234';
+  const { data: preferences, isLoading: isLoadingPreferences } =
+    useGetPreferences();
+  const { data: nextVoucherNumber, isLoading: isLoadingVoucher } =
+    useGetReceiptVoucherNumber('incoming');
+  const voucherNumberDisplay = isLoadingVoucher
+    ? '...'
+    : nextVoucherNumber != null
+      ? `#${nextVoucherNumber}`
+      : '—';
+
+  /** Bag sizes from preferences (first commodity), same order as in preferences */
+  const quantitySizes = useMemo(
+    () => preferences?.commodities?.[0]?.sizes ?? [],
+    [preferences]
+  );
+
+  /** Variety options from preferences (first commodity) */
+  const varietyOptions: Option<string>[] = useMemo(() => {
+    const commodity = preferences?.commodities?.[0];
+    if (!commodity?.varieties?.length) return [];
+    return commodity.varieties.map((v) => ({
+      value: v,
+      label: v,
+      searchableText: v,
+    }));
+  }, [preferences]);
 
   // Transform farmer links to SearchSelector options (active only)
   const farmerOptions: Option<string>[] = useMemo(() => {
@@ -109,11 +126,11 @@ export const IncomingForm = memo(function IncomingForm() {
 
   const defaultSizeQuantities = useMemo(
     () =>
-      Object.fromEntries(QUANTITY_SIZES.map((size) => [size, 0])) as Record<
+      Object.fromEntries(quantitySizes.map((size) => [size, 0])) as Record<
         string,
         number
       >,
-    []
+    [quantitySizes]
   );
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -149,22 +166,22 @@ export const IncomingForm = memo(function IncomingForm() {
           row: loc.row.trim(),
         };
       };
-      const bagSizes = QUANTITY_SIZES.filter(
-        (size) => (value.sizeQuantities[size] ?? 0) > 0
-      ).map((size) => {
-        const qty = value.sizeQuantities[size] ?? 0;
-        const location = getLocation(size);
-        return {
-          name: size,
-          initialQuantity: qty,
-          currentQuantity: qty,
-          location,
-          paltaiLocation: location,
-        };
-      });
-      if (bagSizes.length === 0) {
+      const bagSizes = quantitySizes
+        .filter((size) => (value.sizeQuantities[size] ?? 0) > 0)
+        .map((size) => {
+          const qty = value.sizeQuantities[size] ?? 0;
+          const location = getLocation(size);
+          return {
+            name: size,
+            initialQuantity: qty,
+            currentQuantity: qty,
+            location,
+            paltaiLocation: location,
+          };
+        });
+      if (bagSizes.length === 0 && quantitySizes.length > 0) {
         bagSizes.push({
-          name: QUANTITY_SIZES[0],
+          name: quantitySizes[0],
           initialQuantity: 0,
           currentQuantity: 0,
           location: fallbackLocation,
@@ -251,7 +268,6 @@ export const IncomingForm = memo(function IncomingForm() {
                             loading={isLoadingFarmers}
                             loadingMessage="Loading farmers..."
                             emptyMessage="No farmers found"
-                            className="w-full"
                             buttonClassName="w-full justify-between"
                           />
                         </div>
@@ -297,12 +313,13 @@ export const IncomingForm = memo(function IncomingForm() {
                       Select Variety
                     </FieldLabel>
                     <SearchSelector
-                      options={[
-                        { value: 'a', label: 'A' },
-                        { value: 'b', label: 'B' },
-                      ]}
+                      options={varietyOptions}
                       onSelect={(v) => field.handleChange(v)}
                       value={field.state.value}
+                      buttonClassName="w-full justify-between"
+                      loading={isLoadingPreferences}
+                      loadingMessage="Loading varieties..."
+                      emptyMessage="No varieties configured"
                     />
                   </Field>
                 )}
@@ -342,7 +359,7 @@ export const IncomingForm = memo(function IncomingForm() {
                   <form.Subscribe selector={(state) => state.values.variety}>
                     {(variety) => {
                       const sizeQuantities = field.state.value;
-                      const totalQty = QUANTITY_SIZES.reduce(
+                      const totalQty = quantitySizes.reduce(
                         (sum, size) => sum + (sizeQuantities[size] ?? 0),
                         0
                       );
@@ -361,7 +378,7 @@ export const IncomingForm = memo(function IncomingForm() {
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-4">
-                            {QUANTITY_SIZES.map((size) => {
+                            {quantitySizes.map((size) => {
                               const value = sizeQuantities[size] ?? 0;
                               const displayValue =
                                 value === 0 ? '' : String(value);
@@ -429,7 +446,7 @@ export const IncomingForm = memo(function IncomingForm() {
                     selector={(state) => state.values.sizeQuantities}
                   >
                     {(sizeQuantities) => {
-                      const sizesWithQty = QUANTITY_SIZES.filter(
+                      const sizesWithQty = quantitySizes.filter(
                         (size) => (sizeQuantities[size] ?? 0) > 0
                       );
                       const locationBySize = field.state.value ?? {};
