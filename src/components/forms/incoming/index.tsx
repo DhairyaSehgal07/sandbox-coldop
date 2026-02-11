@@ -227,7 +227,6 @@ export const IncomingForm = memo(function IncomingForm() {
       await createGatePass.mutateAsync({
         farmerStorageLinkId: value.farmerStorageLinkId,
         date: value.date,
-        type: 'RECEIPT',
         variety: value.variety,
         truckNumber: value.truckNumber?.trim() || undefined,
         bagSizes,

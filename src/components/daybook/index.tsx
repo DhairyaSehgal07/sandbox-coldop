@@ -1,7 +1,7 @@
 import { memo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 
-import { Card } from '@/components/ui/card';
+// import { Card } from '@/components/ui/card'; // used in DaybookEntryCard (commented)
 import {
   Item,
   ItemHeader,
@@ -26,7 +26,6 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
@@ -39,27 +38,20 @@ import {
   ArrowUpFromLine,
   ArrowRightFromLine,
   FileText,
-  ClipboardList,
-  Package,
-  Truck,
 } from 'lucide-react';
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+// Used in commented DaybookEntryCard – uncomment when cards are re-enabled:
+// ClipboardList, Package, Truck
+// import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+// import { Progress } from '@/components/ui/progress';
+// import { Empty, EmptyHeader, EmptyTitle, EmptyContent, EmptyMedia } from '@/components/ui/empty';
 
-import {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyContent,
-  EmptyMedia,
-} from '@/components/ui/empty';
+import { useGetDaybook } from '@/services/store-admin/functions/useGetDaybook';
+import { useSearchDaybook } from '@/services/store-admin/functions/useSearchDaybook';
 
 /* ------------------------------------------------------------------ */
 /* Fake Data */
 /* ------------------------------------------------------------------ */
-
-const MOCK_ENTRIES = Array.from({ length: 3 });
 
 const LIMIT_OPTIONS = [10, 25, 50, 100];
 
@@ -78,118 +70,118 @@ const SORT_LABELS: Record<SortOrder, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Entry Card (UI only) */
+/* Entry Card (UI only) – commented out for now, show JSON instead */
 /* ------------------------------------------------------------------ */
 
-const DaybookEntryCard = memo(function DaybookEntryCard() {
-  return (
-    <Card className="overflow-hidden p-0">
-      {/* Pipeline */}
-      <div className="border-border bg-muted/30 px-4 py-3">
-        <div className="text-muted-foreground flex justify-between text-sm">
-          <span>Pipeline</span>
-          <span>60%</span>
-        </div>
-        <Progress value={60} className="mt-2 h-2" />
-      </div>
-
-      {/* Summary */}
-      <div className="border-b px-4 py-3 text-sm">
-        <div className="flex gap-6">
-          <span>Bags: 120</span>
-          <span>Stored: 80</span>
-          <span>Dispatch: 20</span>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="incoming">
-        <TabsList className="w-full overflow-x-auto">
-          <TabsTrigger value="incoming">Incoming</TabsTrigger>
-          <TabsTrigger value="grading">Grading</TabsTrigger>
-          <TabsTrigger value="storage">Storage</TabsTrigger>
-          <TabsTrigger value="nikasi">Dispatch</TabsTrigger>
-          <TabsTrigger value="outgoing">Outgoing</TabsTrigger>
-        </TabsList>
-
-        {/* Incoming */}
-        <TabsContent value="incoming">
-          <div className="p-4 text-sm">
-            Incoming voucher information goes here.
-          </div>
-        </TabsContent>
-
-        {/* Grading */}
-        <TabsContent value="grading">
-          <Empty className="py-8">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ClipboardList />
-              </EmptyMedia>
-              <EmptyTitle>No grading voucher</EmptyTitle>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button asChild>
-                <a href="#">Add Grading Voucher</a>
-              </Button>
-            </EmptyContent>
-          </Empty>
-        </TabsContent>
-
-        {/* Storage */}
-        <TabsContent value="storage">
-          <Empty className="py-8">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <Package />
-              </EmptyMedia>
-              <EmptyTitle>No storage voucher</EmptyTitle>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button asChild>
-                <a href="#">Add Storage Voucher</a>
-              </Button>
-            </EmptyContent>
-          </Empty>
-        </TabsContent>
-
-        {/* Dispatch */}
-        <TabsContent value="nikasi">
-          <Empty className="py-8">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <Truck />
-              </EmptyMedia>
-              <EmptyTitle>No dispatch voucher</EmptyTitle>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button asChild>
-                <a href="#">Add Dispatch Voucher</a>
-              </Button>
-            </EmptyContent>
-          </Empty>
-        </TabsContent>
-
-        {/* Outgoing */}
-        <TabsContent value="outgoing">
-          <Empty className="py-8">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ArrowRightFromLine />
-              </EmptyMedia>
-              <EmptyTitle>No outgoing voucher</EmptyTitle>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button asChild>
-                <a href="#">Add Outgoing Voucher</a>
-              </Button>
-            </EmptyContent>
-          </Empty>
-        </TabsContent>
-      </Tabs>
-    </Card>
-  );
-});
+// const DaybookEntryCard = memo(function DaybookEntryCard() {
+//   return (
+//     <Card className="overflow-hidden p-0">
+//       {/* Pipeline */}
+//       <div className="border-border bg-muted/30 px-4 py-3">
+//         <div className="text-muted-foreground flex justify-between text-sm">
+//           <span>Pipeline</span>
+//           <span>60%</span>
+//         </div>
+//         <Progress value={60} className="mt-2 h-2" />
+//       </div>
+//
+//       {/* Summary */}
+//       <div className="border-b px-4 py-3 text-sm">
+//         <div className="flex gap-6">
+//           <span>Bags: 120</span>
+//           <span>Stored: 80</span>
+//           <span>Dispatch: 20</span>
+//         </div>
+//       </div>
+//
+//       {/* Tabs */}
+//       <Tabs defaultValue="incoming">
+//         <TabsList className="w-full overflow-x-auto">
+//           <TabsTrigger value="incoming">Incoming</TabsTrigger>
+//           <TabsTrigger value="grading">Grading</TabsTrigger>
+//           <TabsTrigger value="storage">Storage</TabsTrigger>
+//           <TabsTrigger value="nikasi">Dispatch</TabsTrigger>
+//           <TabsTrigger value="outgoing">Outgoing</TabsTrigger>
+//         </TabsList>
+//
+//         {/* Incoming */}
+//         <TabsContent value="incoming">
+//           <div className="p-4 text-sm">
+//             Incoming voucher information goes here.
+//           </div>
+//         </TabsContent>
+//
+//         {/* Grading */}
+//         <TabsContent value="grading">
+//           <Empty className="py-8">
+//             <EmptyHeader>
+//               <EmptyMedia variant="icon">
+//                 <ClipboardList />
+//               </EmptyMedia>
+//               <EmptyTitle>No grading voucher</EmptyTitle>
+//             </EmptyHeader>
+//             <EmptyContent>
+//               <Button asChild>
+//                 <a href="#">Add Grading Voucher</a>
+//               </Button>
+//             </EmptyContent>
+//           </Empty>
+//         </TabsContent>
+//
+//         {/* Storage */}
+//         <TabsContent value="storage">
+//           <Empty className="py-8">
+//             <EmptyHeader>
+//               <EmptyMedia variant="icon">
+//                 <Package />
+//               </EmptyMedia>
+//               <EmptyTitle>No storage voucher</EmptyTitle>
+//             </EmptyHeader>
+//             <EmptyContent>
+//               <Button asChild>
+//                 <a href="#">Add Storage Voucher</a>
+//               </Button>
+//             </EmptyContent>
+//           </Empty>
+//         </TabsContent>
+//
+//         {/* Dispatch */}
+//         <TabsContent value="nikasi">
+//           <Empty className="py-8">
+//             <EmptyHeader>
+//               <EmptyMedia variant="icon">
+//                 <Truck />
+//               </EmptyMedia>
+//               <EmptyTitle>No dispatch voucher</EmptyTitle>
+//             </EmptyHeader>
+//             <EmptyContent>
+//               <Button asChild>
+//                 <a href="#">Add Dispatch Voucher</a>
+//               </Button>
+//             </EmptyContent>
+//           </Empty>
+//         </TabsContent>
+//
+//         {/* Outgoing */}
+//         <TabsContent value="outgoing">
+//           <Empty className="py-8">
+//             <EmptyHeader>
+//               <EmptyMedia variant="icon">
+//                 <ArrowRightFromLine />
+//               </EmptyMedia>
+//               <EmptyTitle>No outgoing voucher</EmptyTitle>
+//             </EmptyHeader>
+//             <EmptyContent>
+//               <Button asChild>
+//                 <a href="#">Add Outgoing Voucher</a>
+//               </Button>
+//             </EmptyContent>
+//           </Empty>
+//         </TabsContent>
+//       </Tabs>
+//     </Card>
+//   );
+// });
 
 /* ------------------------------------------------------------------ */
 /* Page */
@@ -198,6 +190,57 @@ const DaybookEntryCard = memo(function DaybookEntryCard() {
 const DaybookPage = memo(function DaybookPage() {
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [searchReceipt, setSearchReceipt] = useState('');
+
+  const { data, isLoading, isError, error, refetch } = useGetDaybook({
+    type: orderFilter,
+    sortBy: sortOrder,
+    page,
+    limit,
+  });
+
+  const searchDaybook = useSearchDaybook();
+  const searchResult = searchDaybook.data;
+  const isSearchMode = searchResult !== undefined;
+
+  const handleSearchReceiptChange = (value: string) => {
+    setSearchReceipt(value.replace(/\D/g, ''));
+  };
+
+  const handleSearchSubmit = () => {
+    const trimmed = searchReceipt.trim();
+    if (trimmed) {
+      searchDaybook.mutate({ receiptNumber: trimmed });
+    }
+  };
+
+  const handleClearSearch = () => {
+    searchDaybook.reset();
+    setSearchReceipt('');
+  };
+
+  const pagination = data?.pagination;
+  const hasPreviousPage = pagination?.hasPreviousPage ?? false;
+  const hasNextPage = pagination?.hasNextPage ?? false;
+  const currentPage = pagination?.currentPage ?? 1;
+  const totalPages = pagination?.totalPages ?? 1;
+
+  const handleOrderFilterChange = (value: OrderFilter) => {
+    setOrderFilter(value);
+    setPage(1);
+  };
+
+  const handleSortOrderChange = (value: SortOrder) => {
+    setSortOrder(value);
+    setPage(1);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1);
+  };
 
   return (
     <main className="mx-auto max-w-7xl p-4">
@@ -209,12 +252,23 @@ const DaybookPage = memo(function DaybookPage() {
               <ItemMedia variant="icon">
                 <Receipt />
               </ItemMedia>
-              <ItemTitle>24 vouchers</ItemTitle>
+              <ItemTitle>
+                {data?.pagination != null
+                  ? `${data.pagination.totalItems} vouchers`
+                  : 'Daybook'}
+              </ItemTitle>
             </div>
 
             <ItemActions>
-              <Button variant="outline" size="sm">
-                <RefreshCw className="mr-2 h-4 w-4" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isLoading}
+              >
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                />
                 Refresh
               </Button>
             </ItemActions>
@@ -227,13 +281,50 @@ const DaybookPage = memo(function DaybookPage() {
           size="sm"
           className="flex-col items-stretch gap-4 rounded-xl"
         >
-          {/* Search */}
-          <div className="relative w-full">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-            <Input
-              placeholder="Search by voucher number, date..."
-              className="font-custom focus-visible:ring-primary w-full pl-10 focus-visible:ring-2 focus-visible:ring-offset-2"
-            />
+          {/* Search by receipt number (numbers only) */}
+          <div className="relative flex w-full gap-2">
+            <div className="relative flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Search by receipt number"
+                value={searchReceipt}
+                onChange={(e) => handleSearchReceiptChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearchSubmit();
+                  }
+                }}
+                className="font-custom focus-visible:ring-primary w-full pl-10 focus-visible:ring-2 focus-visible:ring-offset-2"
+                aria-label="Search by receipt number (numbers only)"
+              />
+            </div>
+            <Button
+              variant="default"
+              size="default"
+              className="font-custom focus-visible:ring-primary shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
+              onClick={handleSearchSubmit}
+              disabled={!searchReceipt.trim() || searchDaybook.isPending}
+            >
+              {searchDaybook.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                'Search'
+              )}
+            </Button>
+            {isSearchMode && (
+              <Button
+                variant="outline"
+                size="default"
+                className="font-custom focus-visible:ring-primary shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
+                onClick={handleClearSearch}
+              >
+                Clear
+              </Button>
+            )}
           </div>
 
           <ItemFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -255,19 +346,19 @@ const DaybookPage = memo(function DaybookPage() {
                 <DropdownMenuContent align="start" className="font-custom">
                   <DropdownMenuCheckboxItem
                     checked={orderFilter === 'all'}
-                    onCheckedChange={() => setOrderFilter('all')}
+                    onCheckedChange={() => handleOrderFilterChange('all')}
                   >
                     All Orders
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={orderFilter === 'incoming'}
-                    onCheckedChange={() => setOrderFilter('incoming')}
+                    onCheckedChange={() => handleOrderFilterChange('incoming')}
                   >
                     Incoming
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={orderFilter === 'outgoing'}
-                    onCheckedChange={() => setOrderFilter('outgoing')}
+                    onCheckedChange={() => handleOrderFilterChange('outgoing')}
                   >
                     Outgoing
                   </DropdownMenuCheckboxItem>
@@ -291,13 +382,13 @@ const DaybookPage = memo(function DaybookPage() {
                 <DropdownMenuContent align="start" className="font-custom">
                   <DropdownMenuCheckboxItem
                     checked={sortOrder === 'latest'}
-                    onCheckedChange={() => setSortOrder('latest')}
+                    onCheckedChange={() => handleSortOrderChange('latest')}
                   >
                     Latest First
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={sortOrder === 'oldest'}
-                    onCheckedChange={() => setSortOrder('oldest')}
+                    onCheckedChange={() => handleSortOrderChange('oldest')}
                   >
                     Oldest First
                   </DropdownMenuCheckboxItem>
@@ -340,48 +431,136 @@ const DaybookPage = memo(function DaybookPage() {
           </ItemFooter>
         </Item>
 
-        {/* Cards */}
-        <div className="space-y-6">
+        {/* Search results or Daybook data (JSON) */}
+        <Item variant="outline" className="flex flex-col gap-2">
+          <ItemHeader>
+            <ItemTitle className="font-custom text-base">
+              {isSearchMode
+                ? `Search results for receipt ${(searchDaybook.variables?.receiptNumber ?? searchReceipt) || '—'}`
+                : 'Daybook API response'}
+            </ItemTitle>
+          </ItemHeader>
+          <div className="bg-muted/30 rounded-lg border p-4">
+            {isSearchMode ? (
+              <>
+                {searchDaybook.isError && (
+                  <p className="font-custom text-destructive text-sm">
+                    Search failed. Please try again.
+                  </p>
+                )}
+                {searchResult != null && (
+                  <pre className="max-h-[70vh] overflow-auto font-mono text-xs wrap-break-word whitespace-pre-wrap">
+                    {JSON.stringify(searchResult, null, 2)}
+                  </pre>
+                )}
+              </>
+            ) : (
+              <>
+                {isLoading && (
+                  <p className="font-custom text-muted-foreground text-sm">
+                    Loading…
+                  </p>
+                )}
+                {isError && (
+                  <pre className="font-custom text-destructive text-sm wrap-break-word whitespace-pre-wrap">
+                    {error instanceof Error
+                      ? error.message
+                      : 'Failed to load daybook'}
+                  </pre>
+                )}
+                {!isLoading && !isError && data != null && (
+                  <pre className="max-h-[70vh] overflow-auto font-mono text-xs wrap-break-word whitespace-pre-wrap">
+                    {JSON.stringify(data, null, 2)}
+                  </pre>
+                )}
+              </>
+            )}
+          </div>
+        </Item>
+
+        {/* Cards – commented out for now. When re-enabling: define MOCK_ENTRIES = Array.from({ length: 3 }) and uncomment DaybookEntryCard. */}
+        {/* <div className="space-y-6">
           {MOCK_ENTRIES.map((_, i) => (
             <DaybookEntryCard key={i} />
           ))}
-        </div>
+        </div> */}
 
-        {/* Pagination */}
-        <Item variant="outline" className="justify-between">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                10 per page
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+        {/* Pagination (hidden when showing search results) */}
+        {!isSearchMode && (
+          <Item
+            variant="outline"
+            className="flex flex-wrap items-center justify-between gap-4"
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                >
+                  {limit} per page
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
 
-            <DropdownMenuContent>
-              {LIMIT_OPTIONS.map((n) => (
-                <DropdownMenuItem key={n}>{n} per page</DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <DropdownMenuContent className="font-custom">
+                {LIMIT_OPTIONS.map((n) => (
+                  <DropdownMenuItem
+                    key={n}
+                    onClick={() => handleLimitChange(n)}
+                  >
+                    {n} per page
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious href="#" />
-              </PaginationItem>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (hasPreviousPage && pagination?.previousPage != null) {
+                        setPage(pagination.previousPage);
+                      }
+                    }}
+                    aria-disabled={!hasPreviousPage}
+                    className={
+                      !hasPreviousPage
+                        ? 'pointer-events-none opacity-50'
+                        : undefined
+                    }
+                  />
+                </PaginationItem>
 
-              <PaginationItem>
-                <PaginationLink isActive href="#">
-                  1 / 5
-                </PaginationLink>
-              </PaginationItem>
+                <PaginationItem>
+                  <span className="font-custom px-4 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </PaginationItem>
 
-              <PaginationItem>
-                <PaginationNext href="#" />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </Item>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (hasNextPage && pagination?.nextPage != null) {
+                        setPage(pagination.nextPage);
+                      }
+                    }}
+                    aria-disabled={!hasNextPage}
+                    className={
+                      !hasNextPage
+                        ? 'pointer-events-none opacity-50'
+                        : undefined
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </Item>
+        )}
       </div>
     </main>
   );

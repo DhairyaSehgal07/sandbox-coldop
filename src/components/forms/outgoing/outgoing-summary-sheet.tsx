@@ -137,9 +137,19 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                 />
                 <SummaryMetaRow
                   label="From → To"
-                  value={`${pendingPayload.from} → ${pendingPayload.to}`}
+                  value={
+                    pendingPayload.from?.trim() || pendingPayload.to?.trim()
+                      ? `${pendingPayload.from?.trim() ?? '—'} → ${pendingPayload.to?.trim() ?? '—'}`
+                      : '—'
+                  }
                   icon={Truck}
                 />
+                {pendingPayload.truckNumber?.trim() && (
+                  <SummaryMetaRow
+                    label="Truck Number"
+                    value={pendingPayload.truckNumber.trim()}
+                  />
+                )}
                 <span className="font-custom text-primary text-sm font-semibold">
                   {totalBags} bag{totalBags !== 1 ? 's' : ''}
                 </span>

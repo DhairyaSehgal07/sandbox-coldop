@@ -109,6 +109,9 @@ function buildOutgoingPayload(
     variety: string;
     orderDate: string;
     remarks: string;
+    from?: string;
+    to?: string;
+    truckNumber?: string;
   },
   gatePassNo: number,
   cellRemovedQuantities: Record<string, number>
@@ -145,8 +148,11 @@ function buildOutgoingPayload(
     gatePassNo,
     date,
     variety: formValues.variety,
-    from: 'Cold Storage',
-    to: 'Customer',
+    ...(formValues.from?.trim() && { from: formValues.from.trim() }),
+    ...(formValues.to?.trim() && { to: formValues.to.trim() }),
+    ...(formValues.truckNumber?.trim() && {
+      truckNumber: formValues.truckNumber.trim(),
+    }),
     incomingGatePasses,
     remarks: formValues.remarks?.trim() ?? '',
   };
@@ -690,6 +696,9 @@ export const OutgoingForm = memo(function OutgoingForm() {
         farmerStorageLinkId: z.string().min(1, 'Please select a farmer'),
         variety: z.string().min(1, 'Please select a variety'),
         orderDate: z.string().min(1, 'Please select a date'),
+        from: z.string().trim().optional(),
+        to: z.string().trim().optional(),
+        truckNumber: z.string().trim().optional(),
         remarks: z.string().max(500).default(''),
       }),
     []
@@ -705,6 +714,9 @@ export const OutgoingForm = memo(function OutgoingForm() {
       farmerStorageLinkId: '',
       variety: '',
       orderDate: formatDate(new Date()),
+      from: '',
+      to: '',
+      truckNumber: '',
       remarks: '',
     },
     validators: {
@@ -719,6 +731,9 @@ export const OutgoingForm = memo(function OutgoingForm() {
             farmerStorageLinkId: value.farmerStorageLinkId,
             variety: value.variety,
             orderDate: value.orderDate,
+            from: value.from,
+            to: value.to,
+            truckNumber: value.truckNumber,
             remarks: value.remarks,
           },
           gatePassNo,
@@ -851,6 +866,72 @@ export const OutgoingForm = memo(function OutgoingForm() {
                 {field.state.meta.isTouched && !field.state.meta.isValid && (
                   <FieldError errors={field.state.meta.errors as FieldErrors} />
                 )}
+              </Field>
+            )}
+          />
+
+          {/* From */}
+          <form.Field
+            name="from"
+            children={(field) => (
+              <Field>
+                <FieldLabel className="font-custom mb-2 block text-base font-semibold">
+                  From
+                  <span className="font-custom text-muted-foreground ml-1 font-normal">
+                    (optional)
+                  </span>
+                </FieldLabel>
+                <Input
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="e.g. Cold Storage"
+                  className="font-custom"
+                />
+              </Field>
+            )}
+          />
+
+          {/* To */}
+          <form.Field
+            name="to"
+            children={(field) => (
+              <Field>
+                <FieldLabel className="font-custom mb-2 block text-base font-semibold">
+                  To
+                  <span className="font-custom text-muted-foreground ml-1 font-normal">
+                    (optional)
+                  </span>
+                </FieldLabel>
+                <Input
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="e.g. Customer"
+                  className="font-custom"
+                />
+              </Field>
+            )}
+          />
+
+          {/* Truck Number */}
+          <form.Field
+            name="truckNumber"
+            children={(field) => (
+              <Field>
+                <FieldLabel className="font-custom mb-2 block text-base font-semibold">
+                  Truck Number
+                  <span className="font-custom text-muted-foreground ml-1 font-normal">
+                    (optional)
+                  </span>
+                </FieldLabel>
+                <Input
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="e.g. MH-12-AB-1234"
+                  className="font-custom"
+                />
               </Field>
             )}
           />

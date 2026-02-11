@@ -25,7 +25,6 @@ const bagSizeSchema = z.object({
 export const createIncomingGatePassBodySchema = z.object({
   farmerStorageLinkId: z.string().min(1, 'Farmer storage link is required'),
   date: z.string().min(1, 'Date is required'),
-  type: z.enum(['RECEIPT', 'TRANSFER']),
   variety: z.string().min(1, 'Variety is required'),
   truckNumber: z.string().trim().optional(),
   bagSizes: z.array(bagSizeSchema).min(1, 'At least one bag size is required'),
