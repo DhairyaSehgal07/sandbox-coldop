@@ -1,9 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
+import OutgoingForm from '@/components/forms/outgoing';
 
 export const Route = createFileRoute('/store-admin/_authenticated/outgoing/')({
-  component: RouteComponent,
+  component: OutgoingForm,
 });
-
-function RouteComponent() {
-  return <div>Hello "/store-admin/_authenticated/outgoing/"!</div>;
-}
