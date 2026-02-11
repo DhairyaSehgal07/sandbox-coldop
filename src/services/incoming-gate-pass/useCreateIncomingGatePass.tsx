@@ -30,6 +30,8 @@ export const createIncomingGatePassBodySchema = z.object({
   truckNumber: z.string().trim().optional(),
   bagSizes: z.array(bagSizeSchema).min(1, 'At least one bag size is required'),
   remarks: z.string().max(500).optional().default(''),
+  manualParchiNumber: z.string().trim().optional(),
+  amount: z.number().min(0).optional(),
 });
 
 export type CreateIncomingGatePassBody = z.infer<
@@ -58,6 +60,7 @@ const STATUS_ERROR_MESSAGES: Record<number, string> = {
   400: 'Invalid request. Please check your input.',
   404: 'Farmer-storage link not found.',
   409: 'A gate pass with these details already exists.',
+  500: 'Something went wrong on the server. Please try again later.',
 };
 
 function getCreateIncomingGatePassError(
@@ -69,7 +72,10 @@ function getCreateIncomingGatePassError(
     status !== undefined && status in STATUS_ERROR_MESSAGES
       ? STATUS_ERROR_MESSAGES[status]
       : DEFAULT_ERROR_MESSAGE;
-  const message = apiMessage ?? fallbackMessage;
+  const message =
+    typeof apiMessage === 'string' && apiMessage.trim()
+      ? apiMessage
+      : fallbackMessage;
   const description = data?.error?.code
     ? `Code: ${data.error.code}`
     : undefined;
@@ -104,19 +110,22 @@ export function useCreateIncomingGatePass() {
         return Promise.reject(new Error(msg ?? 'Validation failed'));
       }
 
+      const body = { ...parsed.data };
+      if (body.date && /^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+        body.date = `${body.date}T00:00:00.000Z`;
+      }
+
       const { data } =
         await storeAdminAxiosClient.post<CreateIncomingGatePassSuccessResponse>(
           '/incoming-gate-pass',
-          parsed.data
+          body
         );
       return data;
     },
 
     onSuccess: (data) => {
       toast.success(data.message ?? 'Incoming gate pass created', {
-        description: data.data
-          ? 'You can view it in the gate pass list.'
-          : undefined,
+        description: data.data ? 'You can view it in daybook' : undefined,
       });
     },
 

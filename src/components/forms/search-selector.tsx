@@ -98,7 +98,10 @@ export function SearchSelector<T extends string>({
       </PopoverTrigger>
 
       <PopoverContent
-        className={cn('w-[200px] p-0', className)}
+        className={cn(
+          'w-(--radix-popover-trigger-width) min-w-[200px] p-0',
+          className
+        )}
         side="bottom"
         align="start"
         sideOffset={10}

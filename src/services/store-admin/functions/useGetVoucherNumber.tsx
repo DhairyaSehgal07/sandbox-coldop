@@ -3,12 +3,12 @@ import storeAdminAxiosClient from '@/lib/axios';
 import { queryClient } from '@/lib/queryClient';
 
 /** Voucher type for the API – corresponds to voucher-number?type= */
-export type VoucherNumberType = 'incoming-gate-pass' | 'outgoing-gate-pass';
+export type VoucherNumberType = 'incoming' | 'outgoing';
 
 /** API response shape for voucher-number */
 export interface VoucherNumberApiResponse {
   success: boolean;
-  data: { type: string; nextVoucherNumber: number } | null;
+  data: { nextNumber: number } | null;
   message?: string;
 }
 
@@ -21,23 +21,23 @@ export const voucherNumberKeys = {
 
 /** Fetcher used by queryOptions and prefetch */
 async function fetchVoucherNumber(
-  type: VoucherNumberType = 'incoming-gate-pass'
+  type: VoucherNumberType = 'incoming'
 ): Promise<number> {
   const { data } = await storeAdminAxiosClient.get<VoucherNumberApiResponse>(
     '/store-admin/voucher-number',
     { params: { type } }
   );
 
-  if (!data.success || data.data?.nextVoucherNumber == null) {
+  if (!data.success || data.data?.nextNumber == null) {
     throw new Error(data.message ?? 'Failed to fetch voucher number');
   }
 
-  return data.data.nextVoucherNumber;
+  return data.data.nextNumber;
 }
 
 /** Query options – use with useQuery, prefetchQuery, or in loaders */
 export const voucherNumberQueryOptions = (
-  type: VoucherNumberType = 'incoming-gate-pass'
+  type: VoucherNumberType = 'incoming'
 ) =>
   queryOptions({
     queryKey: voucherNumberKeys.detail(type),
@@ -46,7 +46,7 @@ export const voucherNumberQueryOptions = (
 
 /** Hook to fetch voucher number for a given gate-pass type. Always fetches latest when the form mounts. */
 export function useGetReceiptVoucherNumber(
-  type: VoucherNumberType = 'incoming-gate-pass'
+  type: VoucherNumberType = 'incoming'
 ) {
   return useQuery({
     ...voucherNumberQueryOptions(type),
@@ -56,8 +56,6 @@ export function useGetReceiptVoucherNumber(
 }
 
 /** Prefetch voucher number – e.g. before opening a gate-pass form */
-export function prefetchVoucherNumber(
-  type: VoucherNumberType = 'incoming-gate-pass'
-) {
+export function prefetchVoucherNumber(type: VoucherNumberType = 'incoming') {
   return queryClient.prefetchQuery(voucherNumberQueryOptions(type));
 }

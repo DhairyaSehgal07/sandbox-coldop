@@ -24,6 +24,7 @@ export interface FarmerStorageLink {
   farmerId: FarmerStorageLinkFarmer;
   coldStorageId: string;
   accountNumber: number;
+  costPerBag: number;
   isActive: boolean;
   notes?: string;
 }

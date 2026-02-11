@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import * as z from 'zod';
 
@@ -28,6 +28,10 @@ import { useGetAllFarmers } from '@/services/store-admin/functions/useGetAllFarm
 import { useGetReceiptVoucherNumber } from '@/services/store-admin/functions/useGetVoucherNumber';
 import { useGetPreferences } from '@/services/preferences/useGetPreferences';
 import { useCreateIncomingGatePass } from '@/services/incoming-gate-pass/useCreateIncomingGatePass';
+import {
+  IncomingSummarySheet,
+  type IncomingSummaryFormValues,
+} from '@/components/forms/incoming/incoming-summary-sheet';
 
 const DEFAULT_LOCATION = { chamber: '', floor: '', row: '' };
 
@@ -96,27 +100,63 @@ export const IncomingForm = memo(function IncomingForm() {
 
   const formSchema = useMemo(
     () =>
-      z.object({
-        farmerStorageLinkId: z.string().min(1, 'Please select a farmer'),
-        date: z.string().min(1, 'Date is required'),
-        variety: z.string().min(1, 'Please select a variety'),
-        truckNumber: z
-          .string()
-          .trim()
-          .optional()
-          .transform((val) => val?.toUpperCase()),
-        sizeQuantities: z.record(z.string(), z.number().min(0)),
-        locationBySize: z.record(
-          z.string(),
-          z.object({
-            chamber: z.string(),
-            floor: z.string(),
-            row: z.string(),
-          })
+      z
+        .object({
+          manualParchiNumber: z.string().trim().optional(),
+          farmerStorageLinkId: z.string().min(1, 'Please select a farmer'),
+          date: z.string().min(1, 'Date is required'),
+          variety: z.string().min(1, 'Please select a variety'),
+          truckNumber: z
+            .string()
+            .trim()
+            .optional()
+            .transform((val) => val?.toUpperCase()),
+          sizeQuantities: z.record(z.string(), z.number().min(0)),
+          locationBySize: z.record(
+            z.string(),
+            z.object({
+              chamber: z.string(),
+              floor: z.string(),
+              row: z.string(),
+            })
+          ),
+          remarks: z.string().max(500).default(''),
+          manualGatePassNumber: z.union([z.number(), z.undefined()]),
+        })
+        .refine(
+          (data) => {
+            const withQty = Object.entries(data.sizeQuantities).filter(
+              ([, qty]) => (qty ?? 0) > 0
+            );
+            return withQty.every(([size]) => {
+              const loc = data.locationBySize?.[size];
+              return (
+                loc &&
+                loc.chamber?.trim() !== '' &&
+                loc.floor?.trim() !== '' &&
+                loc.row?.trim() !== ''
+              );
+            });
+          },
+          {
+            message:
+              'Please enter chamber, floor and row for each size that has a quantity.',
+            path: ['locationBySize'],
+          }
+        )
+        .refine(
+          (data) => {
+            const total = Object.values(data.sizeQuantities).reduce(
+              (sum, qty) => sum + (qty ?? 0),
+              0
+            );
+            return total > 0;
+          },
+          {
+            message: 'Please enter at least one quantity.',
+            path: ['sizeQuantities'],
+          }
         ),
-        remarks: z.string().max(500).default(''),
-        manualGatePassNumber: z.union([z.number(), z.undefined()]),
-      }),
     []
   );
 
@@ -134,9 +174,12 @@ export const IncomingForm = memo(function IncomingForm() {
   );
 
   const [step, setStep] = useState<1 | 2>(1);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const openSheetRef = useRef(false);
 
   const form = useForm({
     defaultValues: {
+      manualParchiNumber: '',
       farmerStorageLinkId: '',
       date: new Date().toISOString().slice(0, 10),
       variety: '',
@@ -149,62 +192,75 @@ export const IncomingForm = memo(function IncomingForm() {
     validators: {
       onSubmit: formSchema as never,
     },
-    onSubmit: async ({ value, formApi }) => {
-      const fallbackLocation = { chamber: 'A', floor: '1', row: 'R1' };
-      const getLocation = (size: string) => {
-        const loc = value.locationBySize[size];
-        if (
-          !loc ||
-          !loc.chamber?.trim() ||
-          !loc.floor?.trim() ||
-          !loc.row?.trim()
-        )
-          return fallbackLocation;
-        return {
-          chamber: loc.chamber.trim(),
-          floor: loc.floor.trim(),
-          row: loc.row.trim(),
-        };
-      };
+    onSubmit: async ({ value }) => {
+      if (openSheetRef.current) {
+        openSheetRef.current = false;
+        setSummaryOpen(true);
+        return;
+      }
+      const selectedLink = farmerLinks?.find(
+        (l) => l._id === value.farmerStorageLinkId
+      );
+      const totalQty = quantitySizes.reduce(
+        (sum, size) => sum + (value.sizeQuantities[size] ?? 0),
+        0
+      );
+      const amount = totalQty * (selectedLink?.costPerBag ?? 0);
+
       const bagSizes = quantitySizes
         .filter((size) => (value.sizeQuantities[size] ?? 0) > 0)
         .map((size) => {
           const qty = value.sizeQuantities[size] ?? 0;
-          const location = getLocation(size);
+          const loc = value.locationBySize[size] ?? { ...DEFAULT_LOCATION };
           return {
             name: size,
             initialQuantity: qty,
             currentQuantity: qty,
-            location,
-            paltaiLocation: location,
+            location: {
+              chamber: loc.chamber.trim(),
+              floor: loc.floor.trim(),
+              row: loc.row.trim(),
+            },
           };
         });
-      if (bagSizes.length === 0 && quantitySizes.length > 0) {
-        bagSizes.push({
-          name: quantitySizes[0],
-          initialQuantity: 0,
-          currentQuantity: 0,
-          location: fallbackLocation,
-          paltaiLocation: fallbackLocation,
-        });
-      }
+
       await createGatePass.mutateAsync({
         farmerStorageLinkId: value.farmerStorageLinkId,
         date: value.date,
         type: 'RECEIPT',
         variety: value.variety,
-        truckNumber: value.truckNumber,
+        truckNumber: value.truckNumber?.trim() || undefined,
         bagSizes,
-        remarks: value.remarks ?? '',
+        remarks: value.remarks?.trim() ?? '',
+        manualParchiNumber: value.manualParchiNumber?.trim() || undefined,
+        amount: amount > 0 ? amount : undefined,
       });
-      formApi.reset();
+
+      form.reset();
       setStep(1);
+      setSummaryOpen(false);
     },
   });
 
   /* -------------------------------------------------
      UI
   ------------------------------------------------- */
+
+  const formValues = form.state.values as IncomingSummaryFormValues;
+  const selectedLinkForSummary = farmerLinks?.find(
+    (l) => l._id === formValues.farmerStorageLinkId
+  );
+  const totalQtyForSummary = quantitySizes.reduce(
+    (sum, size) => sum + (formValues.sizeQuantities[size] ?? 0),
+    0
+  );
+  const totalRentForSummary =
+    selectedLinkForSummary != null
+      ? totalQtyForSummary * (selectedLinkForSummary.costPerBag ?? 0)
+      : null;
+  const farmerDisplayName =
+    farmerOptions.find((o) => o.value === formValues.farmerStorageLinkId)
+      ?.label ?? '—';
 
   return (
     <main className="font-custom mx-auto max-w-2xl px-4 py-6 sm:px-8 sm:py-12">
@@ -226,15 +282,39 @@ export const IncomingForm = memo(function IncomingForm() {
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (step === 2) form.handleSubmit();
-          else setStep(2);
+          if (step === 2) {
+            openSheetRef.current = true;
+            form.handleSubmit();
+          } else setStep(2);
         }}
         className="space-y-6"
       >
         <FieldGroup className="space-y-6">
-          {/* Step 1: Farmer, Date, Variety, Truck, Quantities */}
+          {/* Step 1: Manual Parchi, Farmer, Date, Variety, Truck, Quantities */}
           {step === 1 && (
             <>
+              {/* 0. Manual Parchi Number (optional) */}
+              <form.Field
+                name="manualParchiNumber"
+                children={(field) => (
+                  <Field>
+                    <FieldLabel className="font-custom mb-2 block text-base font-semibold">
+                      Manual Parchi Number
+                      <span className="font-custom text-muted-foreground ml-1 font-normal">
+                        (optional)
+                      </span>
+                    </FieldLabel>
+                    <Input
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="e.g. P-123"
+                      className="font-custom"
+                    />
+                  </Field>
+                )}
+              />
+
               {/* 1. Farmer Selection */}
               <form.Field
                 name="farmerStorageLinkId"
@@ -356,13 +436,23 @@ export const IncomingForm = memo(function IncomingForm() {
               <form.Field
                 name="sizeQuantities"
                 children={(field) => (
-                  <form.Subscribe selector={(state) => state.values.variety}>
-                    {(variety) => {
+                  <form.Subscribe
+                    selector={(state) => ({
+                      variety: state.values.variety,
+                      farmerStorageLinkId: state.values.farmerStorageLinkId,
+                    })}
+                  >
+                    {({ variety, farmerStorageLinkId }) => {
                       const sizeQuantities = field.state.value;
                       const totalQty = quantitySizes.reduce(
                         (sum, size) => sum + (sizeQuantities[size] ?? 0),
                         0
                       );
+                      const selectedLink = farmerLinks?.find(
+                        (l) => l._id === farmerStorageLinkId
+                      );
+                      const costPerBag = selectedLink?.costPerBag ?? 0;
+                      const totalRent = totalQty * costPerBag;
                       const quantitiesDisabled = !variety?.trim();
 
                       return (
@@ -426,6 +516,28 @@ export const IncomingForm = memo(function IncomingForm() {
                                 {totalQty}
                               </span>
                             </div>
+                            <div className="border-primary/30 flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+                              <span className="font-custom text-foreground text-base font-normal">
+                                Total Rent
+                              </span>
+                              <div className="flex flex-col items-end gap-0.5 sm:text-right">
+                                {selectedLink != null ? (
+                                  <>
+                                    <span className="font-custom text-primary text-lg font-semibold">
+                                      ₹{totalRent.toLocaleString()}
+                                    </span>
+                                    <span className="font-custom text-muted-foreground text-sm">
+                                      ({totalQty} bags × ₹
+                                      {costPerBag.toLocaleString()} per bag)
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="font-custom text-foreground text-base font-medium">
+                                    —
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </CardContent>
                         </Card>
                       );
@@ -480,7 +592,7 @@ export const IncomingForm = memo(function IncomingForm() {
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                               <div className="space-y-1.5">
                                 <CardTitle className="font-custom text-foreground text-xl font-semibold">
-                                  Enter Address (CH R FL)
+                                  Enter Address (CH FL R)
                                 </CardTitle>
                               </div>
                               <Button
@@ -650,10 +762,26 @@ export const IncomingForm = memo(function IncomingForm() {
               ? 'Next'
               : createGatePass.isPending
                 ? 'Submitting…'
-                : 'Submit'}
+                : 'Review'}
           </Button>
         </div>
       </form>
+
+      {/* Summary sheet: open on Review (step 2), submit from sheet */}
+      <IncomingSummarySheet
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        voucherNumberDisplay={voucherNumberDisplay}
+        farmerDisplayName={farmerDisplayName}
+        variety={formValues.variety}
+        formValues={formValues}
+        sizeOrder={quantitySizes}
+        totalRent={totalRentForSummary}
+        isPending={createGatePass.isPending}
+        isLoadingVoucher={isLoadingVoucher}
+        gatePassNo={nextVoucherNumber ?? 0}
+        onSubmit={() => form.handleSubmit()}
+      />
     </main>
   );
 });
