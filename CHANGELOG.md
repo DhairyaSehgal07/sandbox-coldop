@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-02-12
+
+### Added
+- Daybook: dedicated `IncomingGatePassCard` and `OutgoingGatePassCard` components with expandable details, bag sizes table, location/farmer info, and action buttons (edit, print)
+- Daybook: reusable `DetailRow` component for key-value detail display
+- Badge UI component (shadcn) for status and labels in daybook cards
+
+### Changed
+- Daybook: refactored entry list to use gate pass cards instead of generic voucher components; incoming/outgoing entries now render type-specific cards with full details
+
+### Removed
+- Daybook: removed `incoming-voucher.tsx` and `outgoing-voucher.tsx` in favor of gate pass card components
+
 ## [0.5.0] - 2026-02-11
 
 ### Added

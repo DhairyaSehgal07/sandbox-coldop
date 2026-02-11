@@ -47,7 +47,10 @@ import {
 // import { Empty, EmptyHeader, EmptyTitle, EmptyContent, EmptyMedia } from '@/components/ui/empty';
 
 import { useGetDaybook } from '@/services/store-admin/functions/useGetDaybook';
+import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 import { useSearchDaybook } from '@/services/store-admin/functions/useSearchDaybook';
+import IncomingGatePassCard from '@/components/daybook/incoming-gate-pass-card';
+import OutgoingGatePassCard from '@/components/daybook/outgoing-gate-pass-card';
 
 /* ------------------------------------------------------------------ */
 /* Fake Data */
@@ -242,6 +245,10 @@ const DaybookPage = memo(function DaybookPage() {
     setPage(1);
   };
 
+  const entries: DaybookEntry[] = isSearchMode
+    ? [...(searchResult?.incoming ?? []), ...(searchResult?.outgoing ?? [])]
+    : (data?.data ?? []);
+
   return (
     <main className="mx-auto max-w-7xl p-4">
       <div className="space-y-6">
@@ -431,59 +438,48 @@ const DaybookPage = memo(function DaybookPage() {
           </ItemFooter>
         </Item>
 
-        {/* Search results or Daybook data (JSON) */}
-        <Item variant="outline" className="flex flex-col gap-2">
-          <ItemHeader>
-            <ItemTitle className="font-custom text-base">
-              {isSearchMode
-                ? `Search results for receipt ${(searchDaybook.variables?.receiptNumber ?? searchReceipt) || '—'}`
-                : 'Daybook API response'}
-            </ItemTitle>
-          </ItemHeader>
-          <div className="bg-muted/30 rounded-lg border p-4">
-            {isSearchMode ? (
-              <>
-                {searchDaybook.isError && (
-                  <p className="font-custom text-destructive text-sm">
-                    Search failed. Please try again.
-                  </p>
+        {/* Search results or Daybook list */}
+        <div className="min-h-[120px] w-full">
+          {isSearchMode && searchDaybook.isError && (
+            <p className="font-custom text-destructive text-sm">
+              Search failed. Please try again.
+            </p>
+          )}
+          {!isSearchMode && isLoading && (
+            <p className="font-custom text-muted-foreground text-sm">
+              Loading…
+            </p>
+          )}
+          {!isSearchMode && isError && (
+            <p className="font-custom text-destructive text-sm">
+              {error instanceof Error
+                ? error.message
+                : 'Failed to load daybook'}
+            </p>
+          )}
+          {!isSearchMode && !isLoading && !isError && entries.length === 0 && (
+            <p className="font-custom text-muted-foreground text-sm">
+              No vouchers to show.
+            </p>
+          )}
+          {isSearchMode && searchResult != null && entries.length === 0 && (
+            <p className="font-custom text-muted-foreground text-sm">
+              No vouchers found for this receipt number.
+            </p>
+          )}
+          {((!isSearchMode && !isLoading && !isError) || isSearchMode) &&
+            entries.length > 0 && (
+              <div className="w-full space-y-4">
+                {entries.map((entry) =>
+                  entry.type === 'RECEIPT' ? (
+                    <IncomingGatePassCard key={entry._id} entry={entry} />
+                  ) : (
+                    <OutgoingGatePassCard key={entry._id} entry={entry} />
+                  )
                 )}
-                {searchResult != null && (
-                  <pre className="max-h-[70vh] overflow-auto font-mono text-xs wrap-break-word whitespace-pre-wrap">
-                    {JSON.stringify(searchResult, null, 2)}
-                  </pre>
-                )}
-              </>
-            ) : (
-              <>
-                {isLoading && (
-                  <p className="font-custom text-muted-foreground text-sm">
-                    Loading…
-                  </p>
-                )}
-                {isError && (
-                  <pre className="font-custom text-destructive text-sm wrap-break-word whitespace-pre-wrap">
-                    {error instanceof Error
-                      ? error.message
-                      : 'Failed to load daybook'}
-                  </pre>
-                )}
-                {!isLoading && !isError && data != null && (
-                  <pre className="max-h-[70vh] overflow-auto font-mono text-xs wrap-break-word whitespace-pre-wrap">
-                    {JSON.stringify(data, null, 2)}
-                  </pre>
-                )}
-              </>
+              </div>
             )}
-          </div>
-        </Item>
-
-        {/* Cards – commented out for now. When re-enabling: define MOCK_ENTRIES = Array.from({ length: 3 }) and uncomment DaybookEntryCard. */}
-        {/* <div className="space-y-6">
-          {MOCK_ENTRIES.map((_, i) => (
-            <DaybookEntryCard key={i} />
-          ))}
-        </div> */}
+        </div>
 
         {/* Pagination (hidden when showing search results) */}
         {!isSearchMode && (
