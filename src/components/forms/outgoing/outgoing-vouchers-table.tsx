@@ -11,6 +11,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { IncomingGatePassCell } from '@/components/forms/outgoing/incoming-gate-pass-cell';
 import {
+  allocationKey,
   getBagDetailForSize,
   type IncomingGatePassDisplayGroup,
 } from '@/components/forms/outgoing/outgoing-form-utils';
@@ -20,7 +21,7 @@ export interface OutgoingVouchersTableProps {
   visibleSizes: string[];
   selectedOrders: Set<string>;
   onOrderToggle: (passId: string) => void;
-  /** Cell key: `${passId}-${sizeName}` -> quantity to remove */
+  /** Cell key: allocationKey(passId, sizeName) -> quantity to remove */
   cellRemovedQuantities: Record<string, number>;
   onCellQuantityChange: (
     passId: string,
@@ -53,7 +54,7 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
         sum +
         group.passes.reduce(
           (rowSum, pass) =>
-            rowSum + (cellRemovedQuantities[`${pass._id}-${size}`] ?? 0),
+            rowSum + (cellRemovedQuantities[allocationKey(pass._id, size)] ?? 0),
           0
         ),
       0
@@ -129,7 +130,7 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
                               </TableCell>
                             );
                           }
-                          const cellKey = `${pass._id}-${size}`;
+                          const cellKey = allocationKey(pass._id, size);
                           return (
                             <TableCell key={size} className="py-1">
                               <IncomingGatePassCell

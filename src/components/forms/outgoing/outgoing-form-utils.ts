@@ -3,6 +3,13 @@ import type {
   IncomingGatePassBagSizeLocation,
 } from '@/services/incoming-gate-pass/useGetIncomingGatePassesOfSingleFarmer';
 
+/** Delimiter for allocation map keys (passId + sizeName). Use so size names with '-' parse correctly. */
+export const ALLOCATION_KEY_DELIMITER = '::';
+
+export function allocationKey(passId: string, sizeName: string): string {
+  return `${passId}${ALLOCATION_KEY_DELIMITER}${sizeName}`;
+}
+
 export interface IncomingGatePassDisplayGroup {
   groupKey: string;
   groupLabel: string;

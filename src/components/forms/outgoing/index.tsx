@@ -38,6 +38,8 @@ import type { IncomingGatePassItem } from '@/services/incoming-gate-pass/useGetI
 import { OutgoingSummarySheet } from '@/components/forms/outgoing/outgoing-summary-sheet';
 import { OutgoingVouchersTable } from '@/components/forms/outgoing/outgoing-vouchers-table';
 import {
+  ALLOCATION_KEY_DELIMITER,
+  allocationKey,
   getBagDetailForSize,
   getUniqueLocationValues,
   groupIncomingPassesByDate,
@@ -51,6 +53,11 @@ import {
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { ArrowDown, ArrowUp, Columns, MapPin, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  useCreateOutgoingGatePass,
+  type CreateOutgoingGatePassBody,
+} from '@/services/outgoing-gate-pass/useCreateOutgoingGatePass';
 
 type FieldErrors = Array<{ message?: string } | undefined>;
 
@@ -95,15 +102,71 @@ function getUniqueSizes(passes: IncomingGatePassItem[]): string[] {
   return [...names].sort();
 }
 
+/** Build API payload from form values and allocation map. Returns null if no allocations. */
+function buildOutgoingPayload(
+  formValues: {
+    farmerStorageLinkId: string;
+    variety: string;
+    orderDate: string;
+    remarks: string;
+  },
+  gatePassNo: number,
+  cellRemovedQuantities: Record<string, number>
+): CreateOutgoingGatePassBody | null {
+  const entries = Object.entries(cellRemovedQuantities).filter(
+    ([, qty]) => qty != null && qty > 0
+  );
+  if (entries.length === 0) return null;
+
+  const byPass = new Map<
+    string,
+    { size: string; quantityToAllocate: number }[]
+  >();
+  for (const [key, qty] of entries) {
+    const idx = key.indexOf(ALLOCATION_KEY_DELIMITER);
+    if (idx <= 0 || idx === key.length - 1) continue;
+    const passId = key.slice(0, idx);
+    const size = key.slice(idx + ALLOCATION_KEY_DELIMITER.length);
+    if (!byPass.has(passId)) byPass.set(passId, []);
+    byPass.get(passId)!.push({ size, quantityToAllocate: qty });
+  }
+
+  const incomingGatePasses = [...byPass.entries()].map(
+    ([incomingGatePassId, allocations]) => ({ incomingGatePassId, allocations })
+  );
+  if (incomingGatePasses.length === 0) return null;
+
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(formValues.orderDate)
+    ? formValues.orderDate
+    : (formValues.orderDate.split('T')[0] ?? formValues.orderDate);
+
+  return {
+    farmerStorageLinkId: formValues.farmerStorageLinkId,
+    gatePassNo,
+    date,
+    variety: formValues.variety,
+    from: 'Cold Storage',
+    to: 'Customer',
+    incomingGatePasses,
+    remarks: formValues.remarks?.trim() ?? '',
+  };
+}
+
 /** Fetches data, filter/sort state, and renders OutgoingVouchersTable (grouped by date, R. Voucher + size cells) */
 function OutgoingVouchersSection({
   farmerStorageLinkId,
   varietyFilter = '',
   onResetVariety,
+  cellRemovedQuantities,
+  setCellRemovedQuantities,
 }: {
   farmerStorageLinkId: string;
   varietyFilter?: string;
   onResetVariety?: () => void;
+  cellRemovedQuantities: Record<string, number>;
+  setCellRemovedQuantities: React.Dispatch<
+    React.SetStateAction<Record<string, number>>
+  >;
 }) {
   const {
     data: allPasses = [],
@@ -123,10 +186,6 @@ function OutgoingVouchersSection({
     floor: '',
     row: '',
   });
-  /** Cell key: `${passId}-${sizeName}` -> quantity to remove */
-  const [cellRemovedQuantities, setCellRemovedQuantities] = useState<
-    Record<string, number>
-  >({});
 
   const filteredAndSortedPasses = useMemo(() => {
     let list = allPasses;
@@ -175,27 +234,27 @@ function OutgoingVouchersSection({
     setSelectedOrders(new Set());
     setCellRemovedQuantities({});
     onResetVariety?.();
-  }, [onResetVariety]);
+  }, [onResetVariety, setCellRemovedQuantities]);
 
   const handleCellQuantityChange = useCallback(
     (passId: string, sizeName: string, quantity: number) => {
       setCellRemovedQuantities((prev) => ({
         ...prev,
-        [`${passId}-${sizeName}`]: quantity,
+        [allocationKey(passId, sizeName)]: quantity,
       }));
     },
-    []
+    [setCellRemovedQuantities]
   );
 
   const handleCellQuickRemove = useCallback(
     (passId: string, sizeName: string) => {
       setCellRemovedQuantities((prev) => {
         const next = { ...prev };
-        delete next[`${passId}-${sizeName}`];
+        delete next[allocationKey(passId, sizeName)];
         return next;
       });
     },
-    []
+    [setCellRemovedQuantities]
   );
 
   const displayGroups = useMemo(
@@ -222,7 +281,7 @@ function OutgoingVouchersSection({
             for (const size of visibleSizes) {
               const detail = getBagDetailForSize(pass, size);
               if (detail && detail.currentQuantity > 0) {
-                next[`${passId}-${size}`] = detail.currentQuantity;
+                next[allocationKey(passId, size)] = detail.currentQuantity;
               }
             }
             return next;
@@ -231,14 +290,15 @@ function OutgoingVouchersSection({
       } else {
         setCellRemovedQuantities((prev) => {
           const next = { ...prev };
+          const prefix = `${passId}${ALLOCATION_KEY_DELIMITER}`;
           for (const key of Object.keys(next)) {
-            if (key.startsWith(`${passId}-`)) delete next[key];
+            if (key.startsWith(prefix)) delete next[key];
           }
           return next;
         });
       }
     },
-    [selectedOrders, displayGroups, visibleSizes]
+    [selectedOrders, displayGroups, visibleSizes, setCellRemovedQuantities]
   );
 
   if (!farmerStorageLinkId) {
@@ -597,6 +657,13 @@ export const OutgoingForm = memo(function OutgoingForm() {
       ? `#${nextVoucherNumber}`
       : '—';
 
+  const createOutgoing = useCreateOutgoingGatePass();
+  const [cellRemovedQuantities, setCellRemovedQuantities] = useState<
+    Record<string, number>
+  >({});
+  const [pendingPayload, setPendingPayload] =
+    useState<CreateOutgoingGatePassBody | null>(null);
+
   const farmerOptions: Option<string>[] = useMemo(() => {
     if (!farmerLinks) return [];
     return farmerLinks
@@ -643,9 +710,27 @@ export const OutgoingForm = memo(function OutgoingForm() {
     validators: {
       onSubmit: formSchema as never,
     },
-    onSubmit: async () => {
+    onSubmit: async ({ value }) => {
       if (openSheetRef.current) {
         openSheetRef.current = false;
+        const gatePassNo = nextVoucherNumber ?? 1;
+        const payload = buildOutgoingPayload(
+          {
+            farmerStorageLinkId: value.farmerStorageLinkId,
+            variety: value.variety,
+            orderDate: value.orderDate,
+            remarks: value.remarks,
+          },
+          gatePassNo,
+          cellRemovedQuantities
+        );
+        if (!payload) {
+          toast.error('Please add at least one allocation', {
+            description: 'Select quantities in the vouchers table.',
+          });
+          return;
+        }
+        setPendingPayload(payload);
         setSummaryOpen(true);
       }
     },
@@ -805,6 +890,8 @@ export const OutgoingForm = memo(function OutgoingForm() {
                   farmerStorageLinkId={farmerStorageLinkId ?? ''}
                   varietyFilter={variety ?? ''}
                   onResetVariety={() => form.setFieldValue('variety', '')}
+                  cellRemovedQuantities={cellRemovedQuantities}
+                  setCellRemovedQuantities={setCellRemovedQuantities}
                 />
               </Field>
             )}
@@ -818,6 +905,7 @@ export const OutgoingForm = memo(function OutgoingForm() {
             variant="outline"
             onClick={() => {
               form.reset();
+              setCellRemovedQuantities({});
               setVouchersSectionKey((k) => k + 1);
             }}
             className="font-custom"
@@ -835,7 +923,24 @@ export const OutgoingForm = memo(function OutgoingForm() {
         </div>
       </form>
 
-      <OutgoingSummarySheet open={summaryOpen} onOpenChange={setSummaryOpen} />
+      <OutgoingSummarySheet
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        pendingPayload={pendingPayload}
+        isSubmitting={createOutgoing.isPending}
+        onConfirm={() => {
+          if (!pendingPayload) return;
+          createOutgoing.mutate(pendingPayload, {
+            onSuccess: () => {
+              setSummaryOpen(false);
+              setPendingPayload(null);
+              form.reset();
+              setCellRemovedQuantities({});
+              setVouchersSectionKey((k) => k + 1);
+            },
+          });
+        }}
+      />
     </main>
   );
 });

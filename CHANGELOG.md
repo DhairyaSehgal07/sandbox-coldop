@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-02-11
+
+### Added
+- Outgoing gate pass service module with `useCreateOutgoingGatePass` hook for creating outgoing gate passes (farmer storage link, gate pass number, date, variety, from/to, incoming gate pass allocations, remarks)
+- Outgoing form: create-outgoing integration, validation and submission using `createOutgoingGatePassBodySchema`, error handling for API errors (400, 404, 409)
+- Outgoing summary sheet: expanded summary with incoming gate pass entries, allocations per size, and submit action wired to create API
+- Outgoing vouchers table: support for displaying and managing outgoing voucher rows in the form
+
 ## [0.4.0] - 2026-02-08
 
 ### Added
