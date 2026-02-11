@@ -38,6 +38,7 @@ import type { IncomingGatePassItem } from '@/services/incoming-gate-pass/useGetI
 import { OutgoingSummarySheet } from '@/components/forms/outgoing/outgoing-summary-sheet';
 import { OutgoingVouchersTable } from '@/components/forms/outgoing/outgoing-vouchers-table';
 import {
+  getBagDetailForSize,
   getUniqueLocationValues,
   groupIncomingPassesByDate,
   passMatchesLocationFilters,
@@ -167,19 +168,11 @@ function OutgoingVouchersSection({
     });
   }, []);
 
-  const handleOrderToggle = useCallback((passId: string) => {
-    setSelectedOrders((prev) => {
-      const next = new Set(prev);
-      if (next.has(passId)) next.delete(passId);
-      else next.add(passId);
-      return next;
-    });
-  }, []);
-
   const handleResetFilters = useCallback(() => {
     setVoucherSort('asc');
     setLocationFilters({ chamber: '', floor: '', row: '' });
     setVisibleColumns(new Set());
+    setSelectedOrders(new Set());
     setCellRemovedQuantities({});
     onResetVariety?.();
   }, [onResetVariety]);
@@ -208,6 +201,44 @@ function OutgoingVouchersSection({
   const displayGroups = useMemo(
     () => groupIncomingPassesByDate(filteredAndSortedPasses, voucherSort),
     [filteredAndSortedPasses, voucherSort]
+  );
+
+  const handleOrderToggle = useCallback(
+    (passId: string) => {
+      const isSelecting = !selectedOrders.has(passId);
+      setSelectedOrders((prev) => {
+        const next = new Set(prev);
+        if (isSelecting) next.add(passId);
+        else next.delete(passId);
+        return next;
+      });
+      if (isSelecting) {
+        const pass = displayGroups
+          .flatMap((g) => g.passes)
+          .find((p) => p._id === passId);
+        if (pass) {
+          setCellRemovedQuantities((prev) => {
+            const next = { ...prev };
+            for (const size of visibleSizes) {
+              const detail = getBagDetailForSize(pass, size);
+              if (detail && detail.currentQuantity > 0) {
+                next[`${passId}-${size}`] = detail.currentQuantity;
+              }
+            }
+            return next;
+          });
+        }
+      } else {
+        setCellRemovedQuantities((prev) => {
+          const next = { ...prev };
+          for (const key of Object.keys(next)) {
+            if (key.startsWith(`${passId}-`)) delete next[key];
+          }
+          return next;
+        });
+      }
+    },
+    [selectedOrders, displayGroups, visibleSizes]
   );
 
   if (!farmerStorageLinkId) {
@@ -598,6 +629,7 @@ export const OutgoingForm = memo(function OutgoingForm() {
   );
 
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [vouchersSectionKey, setVouchersSectionKey] = useState(0);
   const openSheetRef = useRef(false);
 
   const form = useForm({
@@ -769,6 +801,7 @@ export const OutgoingForm = memo(function OutgoingForm() {
                   Incoming gate pass vouchers
                 </FieldLabel>
                 <OutgoingVouchersSection
+                  key={`${farmerStorageLinkId ?? ''}-${vouchersSectionKey}`}
                   farmerStorageLinkId={farmerStorageLinkId ?? ''}
                   varietyFilter={variety ?? ''}
                   onResetVariety={() => form.setFieldValue('variety', '')}
@@ -783,7 +816,10 @@ export const OutgoingForm = memo(function OutgoingForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => form.reset()}
+            onClick={() => {
+              form.reset();
+              setVouchersSectionKey((k) => k + 1);
+            }}
             className="font-custom"
           >
             Reset

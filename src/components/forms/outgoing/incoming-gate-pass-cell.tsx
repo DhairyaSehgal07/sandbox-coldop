@@ -1,5 +1,5 @@
 import { memo, useState, useCallback } from 'react';
-import { X } from 'lucide-react';
+import { MapPin, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Item, ItemContent, ItemTitle } from '@/components/ui/item';
 import {
@@ -153,6 +153,13 @@ export const IncomingGatePassCell = memo(function IncomingGatePassCell({
           <ItemTitle className="font-custom text-foreground/90 truncate text-[11px] leading-tight font-medium">
             {variety}
           </ItemTitle>
+          {location && (location.chamber || location.floor || location.row) && (
+            <p className="font-custom text-muted-foreground/70 flex items-center gap-1 truncate text-[10px] leading-tight">
+              <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+              Ch: {location.chamber ?? '—'} · F: {location.floor ?? '—'} · R:{' '}
+              {location.row ?? '—'}
+            </p>
+          )}
           <div className="text-right">
             <p className="font-custom text-foreground text-sm leading-none font-semibold">
               {currentQuantity.toFixed(1)}
@@ -178,7 +185,8 @@ export const IncomingGatePassCell = memo(function IncomingGatePassCell({
               {initialQuantity.toFixed(1)}
               {location &&
                 (location.chamber || location.floor || location.row) && (
-                  <span className="mt-1 block text-xs">
+                  <span className="mt-1 flex items-center gap-1.5 text-xs">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
                     Ch: {location.chamber ?? '—'} · F: {location.floor ?? '—'}
                     {' · R: '}
                     {location.row ?? '—'}

@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 
 import { Card } from '@/components/ui/card';
 import {
@@ -310,20 +311,20 @@ const DaybookPage = memo(function DaybookPage() {
                 className="font-custom h-10 w-full shrink-0 sm:w-auto"
                 asChild
               >
-                <a href="/store-admin/incoming">
+                <Link to="/store-admin/incoming">
                   <ArrowUpFromLine className="h-4 w-4 shrink-0" />
                   Add Incoming
-                </a>
+                </Link>
               </Button>
               <Button
                 variant="secondary"
                 className="font-custom h-10 w-full shrink-0 sm:w-auto"
                 asChild
               >
-                <a href="/store-admin/outgoing">
+                <Link to="/store-admin/outgoing">
                   <ArrowRightFromLine className="h-4 w-4 shrink-0" />
                   Add Outgoing
-                </a>
+                </Link>
               </Button>
               <Button
                 variant="secondary"
