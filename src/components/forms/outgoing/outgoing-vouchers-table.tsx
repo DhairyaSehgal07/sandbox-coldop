@@ -3,6 +3,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -19,10 +20,18 @@ export interface OutgoingVouchersTableProps {
   visibleSizes: string[];
   selectedOrders: Set<string>;
   onOrderToggle: (passId: string) => void;
+  /** Cell key: `${passId}-${sizeName}` -> quantity to remove */
+  cellRemovedQuantities: Record<string, number>;
+  onCellQuantityChange: (
+    passId: string,
+    sizeName: string,
+    quantity: number
+  ) => void;
+  onCellQuickRemove: (passId: string, sizeName: string) => void;
   isLoadingPasses: boolean;
   hasGradingData: boolean;
   hasFilteredData: boolean;
-  varietyFilter: string;
+  hasActiveFilters: boolean;
 }
 
 export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
@@ -30,11 +39,29 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
   visibleSizes,
   selectedOrders,
   onOrderToggle,
+  cellRemovedQuantities,
+  onCellQuantityChange,
+  onCellQuickRemove,
   isLoadingPasses,
   hasGradingData,
   hasFilteredData,
-  varietyFilter,
+  hasActiveFilters,
 }: OutgoingVouchersTableProps) {
+  const totalBySize = visibleSizes.map((size) =>
+    displayGroups.reduce(
+      (sum, group) =>
+        sum +
+        group.passes.reduce(
+          (rowSum, pass) =>
+            rowSum + (cellRemovedQuantities[`${pass._id}-${size}`] ?? 0),
+          0
+        ),
+      0
+    )
+  );
+  const totalSelected = totalBySize.reduce((sum, q) => sum + q, 0);
+  const showTotals = totalSelected > 0;
+
   return (
     <div className="border-border/40 rounded-md border pt-2">
       {!isLoadingPasses &&
@@ -102,13 +129,24 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
                               </TableCell>
                             );
                           }
+                          const cellKey = `${pass._id}-${size}`;
                           return (
                             <TableCell key={size} className="py-1">
                               <IncomingGatePassCell
                                 variety={pass.variety ?? ''}
                                 currentQuantity={detail.currentQuantity}
                                 initialQuantity={detail.initialQuantity}
+                                removedQuantity={
+                                  cellRemovedQuantities[cellKey] ?? 0
+                                }
+                                onQuantityChange={(q) =>
+                                  onCellQuantityChange(pass._id, size, q)
+                                }
+                                onQuickRemove={() =>
+                                  onCellQuickRemove(pass._id, size)
+                                }
                                 disabled={detail.currentQuantity <= 0}
+                                location={detail.location}
                               />
                             </TableCell>
                           );
@@ -118,21 +156,48 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
                   </Fragment>
                 ))}
               </TableBody>
+              {showTotals && (
+                <TableFooter>
+                  <TableRow className="border-border/60 bg-muted/50 hover:bg-muted/50 font-custom">
+                    <TableCell className="text-foreground/90 py-2.5 font-semibold">
+                      Total selected ({totalSelected.toFixed(1)})
+                    </TableCell>
+                    {visibleSizes.map((size, i) => (
+                      <TableCell
+                        key={size}
+                        className="text-foreground/90 py-2.5 text-right font-medium"
+                      >
+                        {totalBySize[i]! > 0 ? totalBySize[i]!.toFixed(1) : '—'}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableFooter>
+              )}
             </Table>
           </div>
         )}
       {!isLoadingPasses &&
         hasGradingData &&
         !hasFilteredData &&
-        (varietyFilter.trim() === '' ? (
+        (hasActiveFilters ? (
           <p className="font-custom text-muted-foreground py-4 text-center text-sm">
-            Select a variety from the filter above to see vouchers.
+            No vouchers or quantities available for the current filters. Try a
+            different variety or location.
           </p>
         ) : (
           <p className="font-custom text-muted-foreground py-4 text-center text-sm">
-            No vouchers match the selected variety or no bag details.
+            Select a variety from the filter above to see vouchers.
           </p>
         ))}
+      {!isLoadingPasses &&
+        hasGradingData &&
+        hasFilteredData &&
+        visibleSizes.length === 0 && (
+          <p className="font-custom text-muted-foreground py-4 text-center text-sm">
+            Select at least one bag size column (Columns menu) to view
+            quantities.
+          </p>
+        )}
       {!isLoadingPasses && !hasGradingData && (
         <p className="font-custom text-muted-foreground py-4 text-center text-sm">
           No incoming gate pass vouchers for this farmer.

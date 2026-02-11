@@ -21,7 +21,7 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
         <SheetHeader>
           <SheetTitle className="font-custom">Outgoing Summary</SheetTitle>
         </SheetHeader>
-        <div className="font-custom mt-6 text-muted-foreground">
+        <div className="font-custom text-muted-foreground mt-6">
           Summary sheet
         </div>
       </SheetContent>
