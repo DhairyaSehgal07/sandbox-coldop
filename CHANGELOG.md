@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-02-12
+
+### Added
+- My Finances / Vouchers: full vouchers tab with list (DataTable), search, create, edit, and delete
+- Vouchers service module under `services/accounting/vouchers/`: `useGetAllVouchers`, `useCreateVoucher`, `useUpdateVoucher`, `useDeleteVoucher` with query invalidation and toasts
+- Vouchers table columns: voucher #, date, debit/credit ledger names, amount, narration, actions (edit/delete)
+- Separate form components: `LedgerCreateForm`, `LedgerEditForm`, `VoucherCreateForm`, `VoucherEditForm` for reuse and clearer structure
+
+### Changed
+- My Finances / Ledgers: type dropdown in create and edit forms now uses `SearchSelector` (searchable combobox) for consistency with incoming form
+- My Finances / Vouchers: debit and credit ledger dropdowns use `SearchSelector` with search by name, type, category; ledger options loaded via `useGetAllLedgers` in `VoucherCreateForm`
+- Ledgers and Vouchers tabs: create/edit dialogs now render the new form components instead of inline form markup
+
 ## [0.12.0] - 2026-02-12
 
 ### Added

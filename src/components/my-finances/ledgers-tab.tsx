@@ -10,10 +10,11 @@ import type { UpdateLedgerBody } from '@/services/accounting/ledgers/useUpdateLe
 import { useDeleteLedger } from '@/services/accounting/ledgers/useDeleteLeger';
 import { DataTable } from '@/components/ui/data-table';
 import { getLedgersColumns } from './ledgers-columns';
+import LedgerCreateForm from './ledger-create-form';
+import LedgerEditForm from './ledger-edit-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -32,14 +33,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Plus, Search } from 'lucide-react';
-
-const LEDGER_TYPES: CreateLedgerBody['type'][] = [
-  'Asset',
-  'Liability',
-  'Income',
-  'Expense',
-  'Equity',
-];
 
 const LedgerTab = memo(function LedgerTab() {
   const { data: ledgers, isLoading, isError, error } = useGetAllLedgers();
@@ -203,113 +196,13 @@ const LedgerTab = memo(function LedgerTab() {
             <DialogHeader>
               <DialogTitle>Add New Ledger</DialogTitle>
             </DialogHeader>
-            <form
+            <LedgerCreateForm
+              form={form}
+              setForm={setForm}
               onSubmit={handleCreateSubmit}
-              className="font-custom flex flex-col gap-4 pt-2"
-            >
-              <div className="space-y-2">
-                <Label htmlFor="ledger-name">Name</Label>
-                <Input
-                  id="ledger-name"
-                  placeholder="e.g. Bank, Cash"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ledger-type">Type</Label>
-                <select
-                  id="ledger-type"
-                  value={form.type}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      type: e.target.value as CreateLedgerBody['type'],
-                    }))
-                  }
-                  className="border-input bg-background ring-offset-background focus-visible:ring-primary font-custom flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                >
-                  {LEDGER_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ledger-subType">Sub type</Label>
-                <Input
-                  id="ledger-subType"
-                  placeholder="e.g. Current Asset"
-                  value={form.subType}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, subType: e.target.value }))
-                  }
-                  className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ledger-category">Category</Label>
-                <Input
-                  id="ledger-category"
-                  placeholder="e.g. Cash"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, category: e.target.value }))
-                  }
-                  className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ledger-openingBalance">
-                  Opening balance (optional)
-                </Label>
-                <Input
-                  id="ledger-openingBalance"
-                  type="number"
-                  step="any"
-                  placeholder="0"
-                  value={form.openingBalance ?? ''}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setForm((prev) => ({
-                      ...prev,
-                      openingBalance:
-                        v === ''
-                          ? undefined
-                          : (() => {
-                              const n = parseFloat(v);
-                              return Number.isNaN(n) ? undefined : n;
-                            })(),
-                    }));
-                  }}
-                  className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  onClick={() => setDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  disabled={createLedger.isPending}
-                >
-                  {createLedger.isPending ? 'Creating…' : 'Create'}
-                </Button>
-              </div>
-            </form>
+              onCancel={() => setDialogOpen(false)}
+              isPending={createLedger.isPending}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -351,120 +244,17 @@ const LedgerTab = memo(function LedgerTab() {
           <DialogHeader>
             <DialogTitle>Edit Ledger</DialogTitle>
           </DialogHeader>
-          <form
+          <LedgerEditForm
+            ledger={ledgerToEdit}
+            form={editForm}
+            setForm={setEditForm}
             onSubmit={handleEditSubmit}
-            className="font-custom flex flex-col gap-4 pt-2"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="edit-ledger-name">Name</Label>
-              <Input
-                id="edit-ledger-name"
-                placeholder="e.g. Bank, Cash"
-                value={editForm.name}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                required
-                disabled={ledgerToEdit?.isSystemLedger ?? false}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-ledger-type">Type</Label>
-              <select
-                id="edit-ledger-type"
-                value={editForm.type}
-                onChange={(e) =>
-                  setEditForm((prev) => ({
-                    ...prev,
-                    type: e.target.value as UpdateLedgerBody['type'],
-                  }))
-                }
-                className="border-input bg-background ring-offset-background focus-visible:ring-primary font-custom flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={ledgerToEdit?.isSystemLedger ?? false}
-              >
-                {LEDGER_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-ledger-subType">Sub type</Label>
-              <Input
-                id="edit-ledger-subType"
-                placeholder="e.g. Current Asset"
-                value={editForm.subType}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, subType: e.target.value }))
-                }
-                className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                required
-                disabled={ledgerToEdit?.isSystemLedger ?? false}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-ledger-category">Category</Label>
-              <Input
-                id="edit-ledger-category"
-                placeholder="e.g. Cash"
-                value={editForm.category}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, category: e.target.value }))
-                }
-                className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                required
-                disabled={ledgerToEdit?.isSystemLedger ?? false}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-ledger-openingBalance">
-                Opening balance (optional)
-              </Label>
-              <Input
-                id="edit-ledger-openingBalance"
-                type="number"
-                step="any"
-                placeholder="0"
-                value={editForm.openingBalance ?? ''}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setEditForm((prev) => ({
-                    ...prev,
-                    openingBalance:
-                      v === ''
-                        ? undefined
-                        : (() => {
-                            const n = parseFloat(v);
-                            return Number.isNaN(n) ? undefined : n;
-                          })(),
-                  }));
-                }}
-                className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                onClick={() => {
-                  setEditDialogOpen(false);
-                  setLedgerToEdit(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                disabled={updateLedger.isPending}
-              >
-                {updateLedger.isPending ? 'Saving…' : 'Save'}
-              </Button>
-            </div>
-          </form>
+            onCancel={() => {
+              setEditDialogOpen(false);
+              setLedgerToEdit(null);
+            }}
+            isPending={updateLedger.isPending}
+          />
         </DialogContent>
       </Dialog>
       <DataTable columns={columns} data={filteredLedgers} />

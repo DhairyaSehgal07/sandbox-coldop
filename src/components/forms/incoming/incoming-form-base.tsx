@@ -470,12 +470,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
           e.preventDefault();
           e.stopPropagation();
           if (step === 2) {
-            if (isEditMode) {
-              form.handleSubmit();
-            } else {
-              openSheetRef.current = true;
-              form.handleSubmit();
-            }
+            form.handleSubmit();
           } else setStep(2);
         }}
         className="space-y-6"
