@@ -15,6 +15,7 @@ import { Route as StoreAdminAuthenticatedRouteImport } from './routes/store-admi
 import { Route as StoreAdminLoginIndexRouteImport } from './routes/store-admin/login/index'
 import { Route as StoreAdminAuthenticatedPeopleIndexRouteImport } from './routes/store-admin/_authenticated/people/index'
 import { Route as StoreAdminAuthenticatedOutgoingIndexRouteImport } from './routes/store-admin/_authenticated/outgoing/index'
+import { Route as StoreAdminAuthenticatedMyFinancesIndexRouteImport } from './routes/store-admin/_authenticated/my-finances/index'
 import { Route as StoreAdminAuthenticatedIncomingIndexRouteImport } from './routes/store-admin/_authenticated/incoming/index'
 import { Route as StoreAdminAuthenticatedEditHistoryIndexRouteImport } from './routes/store-admin/_authenticated/edit-history/index'
 import { Route as StoreAdminAuthenticatedDaybookIndexRouteImport } from './routes/store-admin/_authenticated/daybook/index'
@@ -52,6 +53,12 @@ const StoreAdminAuthenticatedOutgoingIndexRoute =
   StoreAdminAuthenticatedOutgoingIndexRouteImport.update({
     id: '/outgoing/',
     path: '/outgoing/',
+    getParentRoute: () => StoreAdminAuthenticatedRoute,
+  } as any)
+const StoreAdminAuthenticatedMyFinancesIndexRoute =
+  StoreAdminAuthenticatedMyFinancesIndexRouteImport.update({
+    id: '/my-finances/',
+    path: '/my-finances/',
     getParentRoute: () => StoreAdminAuthenticatedRoute,
   } as any)
 const StoreAdminAuthenticatedIncomingIndexRoute =
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/store-admin/daybook/': typeof StoreAdminAuthenticatedDaybookIndexRoute
   '/store-admin/edit-history/': typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   '/store-admin/incoming/': typeof StoreAdminAuthenticatedIncomingIndexRoute
+  '/store-admin/my-finances/': typeof StoreAdminAuthenticatedMyFinancesIndexRoute
   '/store-admin/outgoing/': typeof StoreAdminAuthenticatedOutgoingIndexRoute
   '/store-admin/people/': typeof StoreAdminAuthenticatedPeopleIndexRoute
   '/store-admin/people/$farmerStorageLinkId/': typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
@@ -113,6 +121,7 @@ export interface FileRoutesByTo {
   '/store-admin/daybook': typeof StoreAdminAuthenticatedDaybookIndexRoute
   '/store-admin/edit-history': typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   '/store-admin/incoming': typeof StoreAdminAuthenticatedIncomingIndexRoute
+  '/store-admin/my-finances': typeof StoreAdminAuthenticatedMyFinancesIndexRoute
   '/store-admin/outgoing': typeof StoreAdminAuthenticatedOutgoingIndexRoute
   '/store-admin/people': typeof StoreAdminAuthenticatedPeopleIndexRoute
   '/store-admin/people/$farmerStorageLinkId': typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
@@ -128,6 +137,7 @@ export interface FileRoutesById {
   '/store-admin/_authenticated/daybook/': typeof StoreAdminAuthenticatedDaybookIndexRoute
   '/store-admin/_authenticated/edit-history/': typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   '/store-admin/_authenticated/incoming/': typeof StoreAdminAuthenticatedIncomingIndexRoute
+  '/store-admin/_authenticated/my-finances/': typeof StoreAdminAuthenticatedMyFinancesIndexRoute
   '/store-admin/_authenticated/outgoing/': typeof StoreAdminAuthenticatedOutgoingIndexRoute
   '/store-admin/_authenticated/people/': typeof StoreAdminAuthenticatedPeopleIndexRoute
   '/store-admin/_authenticated/people/$farmerStorageLinkId/': typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/store-admin/daybook/'
     | '/store-admin/edit-history/'
     | '/store-admin/incoming/'
+    | '/store-admin/my-finances/'
     | '/store-admin/outgoing/'
     | '/store-admin/people/'
     | '/store-admin/people/$farmerStorageLinkId/'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
     | '/store-admin/daybook'
     | '/store-admin/edit-history'
     | '/store-admin/incoming'
+    | '/store-admin/my-finances'
     | '/store-admin/outgoing'
     | '/store-admin/people'
     | '/store-admin/people/$farmerStorageLinkId'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
     | '/store-admin/_authenticated/daybook/'
     | '/store-admin/_authenticated/edit-history/'
     | '/store-admin/_authenticated/incoming/'
+    | '/store-admin/_authenticated/my-finances/'
     | '/store-admin/_authenticated/outgoing/'
     | '/store-admin/_authenticated/people/'
     | '/store-admin/_authenticated/people/$farmerStorageLinkId/'
@@ -230,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreAdminAuthenticatedOutgoingIndexRouteImport
       parentRoute: typeof StoreAdminAuthenticatedRoute
     }
+    '/store-admin/_authenticated/my-finances/': {
+      id: '/store-admin/_authenticated/my-finances/'
+      path: '/my-finances'
+      fullPath: '/store-admin/my-finances/'
+      preLoaderRoute: typeof StoreAdminAuthenticatedMyFinancesIndexRouteImport
+      parentRoute: typeof StoreAdminAuthenticatedRoute
+    }
     '/store-admin/_authenticated/incoming/': {
       id: '/store-admin/_authenticated/incoming/'
       path: '/incoming'
@@ -279,6 +299,7 @@ interface StoreAdminAuthenticatedRouteChildren {
   StoreAdminAuthenticatedDaybookIndexRoute: typeof StoreAdminAuthenticatedDaybookIndexRoute
   StoreAdminAuthenticatedEditHistoryIndexRoute: typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   StoreAdminAuthenticatedIncomingIndexRoute: typeof StoreAdminAuthenticatedIncomingIndexRoute
+  StoreAdminAuthenticatedMyFinancesIndexRoute: typeof StoreAdminAuthenticatedMyFinancesIndexRoute
   StoreAdminAuthenticatedOutgoingIndexRoute: typeof StoreAdminAuthenticatedOutgoingIndexRoute
   StoreAdminAuthenticatedPeopleIndexRoute: typeof StoreAdminAuthenticatedPeopleIndexRoute
   StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute: typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
@@ -294,6 +315,8 @@ const StoreAdminAuthenticatedRouteChildren: StoreAdminAuthenticatedRouteChildren
       StoreAdminAuthenticatedEditHistoryIndexRoute,
     StoreAdminAuthenticatedIncomingIndexRoute:
       StoreAdminAuthenticatedIncomingIndexRoute,
+    StoreAdminAuthenticatedMyFinancesIndexRoute:
+      StoreAdminAuthenticatedMyFinancesIndexRoute,
     StoreAdminAuthenticatedOutgoingIndexRoute:
       StoreAdminAuthenticatedOutgoingIndexRoute,
     StoreAdminAuthenticatedPeopleIndexRoute:
