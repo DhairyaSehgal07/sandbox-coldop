@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   ChevronDown,
   ChevronUp,
+  Pencil,
   Printer,
   User,
   Package,
@@ -37,6 +38,51 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
     () => entry.orderDetails ?? [],
     [entry.orderDetails]
   );
+  /** For each order detail size, gate pass numbers from incomingGatePassSnapshots that have that bag size. */
+  const refGatePassNosBySize = useMemo(() => {
+    const snapshots = entry.incomingGatePassSnapshots ?? [];
+    const map = new Map<string, number[]>();
+    for (const od of orderDetails) {
+      const size = od.size;
+      if (!size) continue;
+      const gatePassNos: number[] = [];
+      for (const snap of snapshots) {
+        const hasSize = snap.bagSizes?.some(
+          (bs) => (bs.name ?? '').trim() === size.trim()
+        );
+        if (hasSize) gatePassNos.push(snap.gatePassNo);
+      }
+      if (gatePassNos.length > 0) map.set(size, gatePassNos);
+    }
+    return map;
+  }, [entry.incomingGatePassSnapshots, orderDetails]);
+
+  /** For each order detail size, location string(s) from incomingGatePassSnapshots (chamber-floor-row). */
+  const locationBySize = useMemo(() => {
+    const snapshots = entry.incomingGatePassSnapshots ?? [];
+    const map = new Map<string, string>();
+    for (const od of orderDetails) {
+      const size = (od.size ?? '').trim();
+      if (!size) continue;
+      const parts: string[] = [];
+      const seen = new Set<string>();
+      for (const snap of snapshots) {
+        for (const bs of snap.bagSizes ?? []) {
+          if ((bs.name ?? '').trim() !== size) continue;
+          const loc = bs.location;
+          if (!loc) continue;
+          const str = `${loc.chamber}-${loc.floor}-${loc.row}`;
+          if (!seen.has(str)) {
+            seen.add(str);
+            parts.push(str);
+          }
+        }
+      }
+      if (parts.length > 0) map.set(od.size ?? '', parts.join(', '));
+    }
+    return map;
+  }, [entry.incomingGatePassSnapshots, orderDetails]);
+
   const { totalIssued, totalAvailable } = useMemo(() => {
     let issued = 0;
     let available = 0;
@@ -50,16 +96,16 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
   const bags = totalIssued + totalAvailable;
 
   return (
-    <Card className="border-border/40 hover:border-primary/30 overflow-hidden pt-0 shadow-sm transition-all duration-200 hover:shadow-md">
+    <Card className="border-border/40 hover:border-destructive/30 overflow-hidden pt-0 shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="w-full px-4 py-4 sm:px-5 sm:py-5">
         <CardHeader className="px-0 pt-0 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-2">
-                <div className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
+                <div className="bg-destructive h-1.5 w-1.5 shrink-0 rounded-full" />
                 <h3 className="text-foreground font-custom text-base font-bold tracking-tight">
                   OGP{' '}
-                  <span className="text-primary">
+                  <span className="text-destructive">
                     #{entry.gatePassNo ?? '—'}
                   </span>
                   {entry.manualParchiNumber != null && (
@@ -127,15 +173,21 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
             )}
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.print()}
-            className="h-8 w-8 p-0"
-            aria-label="Print gate pass"
-          >
-            <Printer className="h-3.5 w-3.5" />
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="h-8 w-8 p-0"
+              aria-label="Print gate pass"
+            >
+              <Printer className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
 
         {isExpanded && (
@@ -151,19 +203,25 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                     <thead>
                       <tr className="text-muted-foreground/70 border-border/50 border-b text-left text-[10px] font-medium tracking-wider uppercase">
                         <th
-                          className="w-[20%] px-1 pb-2 sm:px-1 sm:pr-3"
+                          className="w-[18%] px-1 pb-2 sm:px-1 sm:pr-3"
                           title="Bag type / size"
                         >
                           Type
                         </th>
                         <th
-                          className="w-[18%] px-1 pb-2 sm:px-1 sm:pr-3"
+                          className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                          title="Storage location (chamber-floor-row)"
+                        >
+                          Location
+                        </th>
+                        <th
+                          className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
                           title="Receipt / reference voucher"
                         >
                           Ref
                         </th>
                         <th
-                          className="w-[18%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
+                          className="w-[16%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
                           title="Initial quantity"
                         >
                           Init
@@ -195,10 +253,28 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                             <td className="px-1 py-2 font-medium sm:pr-3">
                               {od.size ?? '—'}
                             </td>
+                            <td className="text-foreground px-1 py-2 sm:pr-3">
+                              {locationBySize.get(od.size ?? '') ?? '—'}
+                            </td>
                             <td className="px-1 py-2 sm:pr-3">
                               <span className="inline-flex items-center gap-1 sm:gap-1.5">
                                 <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
-                                —
+                                {(() => {
+                                  const direct =
+                                    od.incomingGatePassNo ?? od.gatePassNumber;
+                                  const fromSnapshots =
+                                    refGatePassNosBySize.get(od.size ?? '');
+                                  const refNos =
+                                    direct != null
+                                      ? [direct]
+                                      : (fromSnapshots ?? []);
+                                  if (refNos.length === 0) return '—';
+                                  return (
+                                    <span className="text-foreground font-medium">
+                                      {refNos.map((no) => `#${no}`).join(', ')}
+                                    </span>
+                                  );
+                                })()}
                               </span>
                             </td>
                             <td className="px-1 py-2 text-right sm:pr-3">
@@ -216,8 +292,8 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                         );
                       })}
                       {orderDetails.length > 0 && (
-                        <tr className="border-border/60 bg-muted/50 text-primary border-t-2 font-semibold">
-                          <td className="px-1 py-2.5 sm:pr-3" colSpan={2}>
+                        <tr className="border-border/60 bg-muted/50 text-destructive border-t-2 font-semibold">
+                          <td className="px-1 py-2.5 sm:pr-3" colSpan={3}>
                             Total
                           </td>
                           <td className="px-1 py-2.5 text-right sm:pr-3">

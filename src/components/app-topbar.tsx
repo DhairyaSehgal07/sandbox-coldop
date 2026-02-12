@@ -131,6 +131,9 @@ const PageTitleComponent = () => {
     if (pathname.match(/^\/store-admin\/people\/[^/]+$/)) {
       return 'Farmer Profile';
     }
+    if (pathname.match(/^\/store-admin\/incoming\/edit\/[^/]+$/)) {
+      return 'Edit Incoming';
+    }
 
     const segments = pathname.split('/').filter(Boolean);
     const last = segments.at(-1) ?? '';

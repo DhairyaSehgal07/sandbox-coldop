@@ -32,6 +32,7 @@ import {
   IncomingSummarySheet,
   type IncomingSummaryFormValues,
 } from '@/components/forms/incoming/incoming-summary-sheet';
+import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 
 const DEFAULT_LOCATION = { chamber: '', floor: '', row: '' };
 
@@ -39,7 +40,17 @@ type LocationEntry = { chamber: string; floor: string; row: string };
 
 type FieldErrors = Array<{ message?: string } | undefined>;
 
-export const IncomingForm = memo(function IncomingForm() {
+export interface IncomingFormProps {
+  editEntry?: DaybookEntry;
+  editId?: string;
+}
+
+export const IncomingForm = memo(function IncomingForm({
+  editEntry,
+  editId,
+}: IncomingFormProps = {}) {
+  const isEditMode = Boolean(editEntry);
+
   const {
     data: farmerLinks,
     isLoading: isLoadingFarmers,
@@ -51,13 +62,15 @@ export const IncomingForm = memo(function IncomingForm() {
     useGetPreferences();
   const { data: nextVoucherNumber, isLoading: isLoadingVoucher } =
     useGetReceiptVoucherNumber('incoming');
-  const voucherNumberDisplay = isLoadingVoucher
-    ? '...'
-    : nextVoucherNumber != null
-      ? `#${nextVoucherNumber}`
-      : '—';
+  const voucherNumberDisplay = isEditMode
+    ? (editEntry?.gatePassNo != null ? `#${editEntry.gatePassNo}` : '—')
+    : isLoadingVoucher
+      ? '...'
+      : nextVoucherNumber != null
+        ? `#${nextVoucherNumber}`
+        : '—';
 
-  /** Bag sizes from preferences (first commodity), same order as in preferences */
+  /** Bag sizes from preferences (first commodity). Same for create and edit so all sizes are available. */
   const quantitySizes = useMemo(
     () => preferences?.commodities?.[0]?.sizes ?? [],
     [preferences]
@@ -173,12 +186,45 @@ export const IncomingForm = memo(function IncomingForm() {
     [quantitySizes]
   );
 
+  /** When editing, derive initial sizeQuantities and locationBySize from entry */
+  const editDefaultValues = useMemo(() => {
+    if (!editEntry?.bagSizes?.length || !quantitySizes.length) return null;
+    const sizeQuantities = { ...defaultSizeQuantities };
+    const locationBySize: Record<string, LocationEntry> = {};
+    for (const bag of editEntry.bagSizes) {
+      if (quantitySizes.includes(bag.name)) {
+        sizeQuantities[bag.name] = bag.initialQuantity;
+        const loc = bag.location;
+        locationBySize[bag.name] = loc
+          ? {
+              chamber: loc.chamber ?? '',
+              floor: loc.floor ?? '',
+              row: loc.row ?? '',
+            }
+          : { ...DEFAULT_LOCATION };
+      }
+    }
+    return {
+      manualParchiNumber: editEntry.manualParchiNumber ?? '',
+      farmerStorageLinkId: editEntry.farmerStorageLinkId?._id ?? '',
+      date: editEntry.date
+        ? new Date(editEntry.date).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+      variety: editEntry.variety ?? '',
+      truckNumber: editEntry.truckNumber ?? '',
+      sizeQuantities,
+      locationBySize,
+      remarks: editEntry.remarks ?? '',
+      manualGatePassNumber: undefined as number | undefined,
+    };
+  }, [editEntry, quantitySizes, defaultSizeQuantities]);
+
   const [step, setStep] = useState<1 | 2>(1);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const openSheetRef = useRef(false);
 
   const form = useForm({
-    defaultValues: {
+    defaultValues: editDefaultValues ?? {
       manualParchiNumber: '',
       farmerStorageLinkId: '',
       date: new Date().toISOString().slice(0, 10),
@@ -193,11 +239,6 @@ export const IncomingForm = memo(function IncomingForm() {
       onSubmit: formSchema as never,
     },
     onSubmit: async ({ value }) => {
-      if (openSheetRef.current) {
-        openSheetRef.current = false;
-        setSummaryOpen(true);
-        return;
-      }
       const selectedLink = farmerLinks?.find(
         (l) => l._id === value.farmerStorageLinkId
       );
@@ -223,6 +264,29 @@ export const IncomingForm = memo(function IncomingForm() {
             },
           };
         });
+
+      const payload = {
+        ...(editId && { id: editId }),
+        farmerStorageLinkId: value.farmerStorageLinkId,
+        date: value.date,
+        variety: value.variety,
+        truckNumber: value.truckNumber?.trim() || undefined,
+        bagSizes,
+        remarks: value.remarks?.trim() ?? '',
+        manualParchiNumber: value.manualParchiNumber?.trim() || undefined,
+        amount: amount > 0 ? amount : undefined,
+      };
+
+      if (isEditMode) {
+        console.log('Incoming edit payload:', payload);
+        return;
+      }
+
+      if (openSheetRef.current) {
+        openSheetRef.current = false;
+        setSummaryOpen(true);
+        return;
+      }
 
       await createGatePass.mutateAsync({
         farmerStorageLinkId: value.farmerStorageLinkId,
@@ -261,12 +325,23 @@ export const IncomingForm = memo(function IncomingForm() {
     farmerOptions.find((o) => o.value === formValues.farmerStorageLinkId)
       ?.label ?? '—';
 
+  /** In edit mode, wait for preferences so all sizes and prefilled values are correct */
+  if (isEditMode && quantitySizes.length === 0 && isLoadingPreferences) {
+    return (
+      <main className="font-custom mx-auto max-w-2xl px-4 py-6 sm:px-8 sm:py-12">
+        <p className="text-muted-foreground font-custom text-sm">
+          Loading form…
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="font-custom mx-auto max-w-2xl px-4 py-6 sm:px-8 sm:py-12">
       {/* Header */}
       <div className="mb-8 space-y-4">
         <h1 className="font-custom text-foreground text-3xl font-bold sm:text-4xl">
-          Create Incoming Order
+          {isEditMode ? 'Edit Incoming Order' : 'Create Incoming Order'}
         </h1>
 
         <div className="bg-primary/20 inline-block rounded-full px-4 py-1.5">
@@ -282,8 +357,12 @@ export const IncomingForm = memo(function IncomingForm() {
           e.preventDefault();
           e.stopPropagation();
           if (step === 2) {
-            openSheetRef.current = true;
-            form.handleSubmit();
+            if (isEditMode) {
+              form.handleSubmit();
+            } else {
+              openSheetRef.current = true;
+              form.handleSubmit();
+            }
           } else setStep(2);
         }}
         className="space-y-6"
@@ -755,32 +834,38 @@ export const IncomingForm = memo(function IncomingForm() {
             variant="default"
             size="lg"
             className="font-custom px-8 font-bold"
-            disabled={step === 2 ? createGatePass.isPending : false}
+            disabled={
+              step === 2 ? !isEditMode && createGatePass.isPending : false
+            }
           >
             {step === 1
               ? 'Next'
-              : createGatePass.isPending
-                ? 'Submitting…'
-                : 'Review'}
+              : isEditMode
+                ? 'Save'
+                : createGatePass.isPending
+                  ? 'Submitting…'
+                  : 'Review'}
           </Button>
         </div>
       </form>
 
-      {/* Summary sheet: open on Review (step 2), submit from sheet */}
-      <IncomingSummarySheet
-        open={summaryOpen}
-        onOpenChange={setSummaryOpen}
-        voucherNumberDisplay={voucherNumberDisplay}
-        farmerDisplayName={farmerDisplayName}
-        variety={formValues.variety}
-        formValues={formValues}
-        sizeOrder={quantitySizes}
-        totalRent={totalRentForSummary}
-        isPending={createGatePass.isPending}
-        isLoadingVoucher={isLoadingVoucher}
-        gatePassNo={nextVoucherNumber ?? 0}
-        onSubmit={() => form.handleSubmit()}
-      />
+      {/* Summary sheet: open on Review (step 2), submit from sheet (create only) */}
+      {!isEditMode && (
+        <IncomingSummarySheet
+          open={summaryOpen}
+          onOpenChange={setSummaryOpen}
+          voucherNumberDisplay={voucherNumberDisplay}
+          farmerDisplayName={farmerDisplayName}
+          variety={formValues.variety}
+          formValues={formValues}
+          sizeOrder={quantitySizes}
+          totalRent={totalRentForSummary}
+          isPending={createGatePass.isPending}
+          isLoadingVoucher={isLoadingVoucher}
+          gatePassNo={nextVoucherNumber ?? 0}
+          onSubmit={() => form.handleSubmit()}
+        />
+      )}
     </main>
   );
 });
