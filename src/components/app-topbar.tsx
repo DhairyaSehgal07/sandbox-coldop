@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
-import { User } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { History, User } from 'lucide-react';
 import { LogoutButton } from './logout-button';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,8 +41,8 @@ const UserMenuComponent = ({ admin, coldStorage }: UserMenuProps) => {
           />
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-semibold">{admin.name}</p>
-            <p className="text-xs text-muted-foreground">{admin.role}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">{admin.role}</p>
+            <p className="text-muted-foreground text-xs">
               🇮🇳 +91 {admin.mobileNumber}
             </p>
           </div>
@@ -53,6 +54,18 @@ const UserMenuComponent = ({ admin, coldStorage }: UserMenuProps) => {
       <DropdownMenuItem>
         <User className="mr-2 h-4 w-4" />
         <span>Profile</span>
+      </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuItem asChild>
+        <Link
+          to="/store-admin/edit-history"
+          className="focus:bg-accent focus:text-accent-foreground flex cursor-pointer items-center"
+        >
+          <History className="mr-2 h-4 w-4" />
+          <span>Edit history</span>
+        </Link>
       </DropdownMenuItem>
 
       <DropdownMenuSeparator />
@@ -77,8 +90,8 @@ const NavbarStaticContentComponent = ({
   return (
     <>
       {/* Desktop */}
-      <div className="hidden md:flex items-center space-x-4">
-        <span className="text-sm text-muted-foreground">
+      <div className="hidden items-center space-x-4 md:flex">
+        <span className="text-muted-foreground text-sm">
           Welcome, {admin.name}
         </span>
 
@@ -100,7 +113,7 @@ const NavbarStaticContentComponent = ({
       </div>
 
       {/* Mobile */}
-      <div className="md:hidden flex items-center space-x-2">
+      <div className="flex items-center space-x-2 md:hidden">
         <ModeToggle />
 
         <DropdownMenu>
@@ -148,8 +161,8 @@ const PageTitleComponent = () => {
   }, [pathname]);
 
   return (
-    <div className="md:ml-6 md:pl-6 md:border-l border-border">
-      <h1 className="text-2xl font-bold text-foreground tracking-tight">
+    <div className="border-border md:ml-6 md:border-l md:pl-6">
+      <h1 className="text-foreground text-2xl font-bold tracking-tight">
         {formatted}
       </h1>
     </div>
@@ -167,11 +180,11 @@ function Navbar() {
   // Skeleton while hydration is incomplete
   if (!hasHydrated || !admin) {
     return (
-      <nav className="sticky top-0 z-40 bg-background shadow-sm border-b border-border">
-        <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <nav className="bg-background border-border sticky top-0 z-40 border-b shadow-sm">
+        <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
             <SidebarTrigger className="hidden md:flex" />
-            <div className="md:ml-6 md:pl-6 md:border-l border-border">
+            <div className="border-border md:ml-6 md:border-l md:pl-6">
               <Skeleton className="h-6 w-48 rounded-md" />
             </div>
           </div>
@@ -186,8 +199,8 @@ function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-40 bg-background shadow-sm border-b border-border">
-      <div className="px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+    <nav className="bg-background border-border sticky top-0 z-40 border-b shadow-sm">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Sidebar + page title */}
         <div className="flex items-center">
           <SidebarTrigger className="hidden md:flex" />

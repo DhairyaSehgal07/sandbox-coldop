@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-02-12
+
+### Added
+- Edit history: new store-admin page at `/store-admin/edit-history` listing all edits for the current cold storage (GET /edit-history/storage)
+- Edit history: entry cards with before/after snapshots, entity type, action, edited-by, and collapsible details (bag sizes, variety, status, location)
+- Edit history: search (by editor, summary, type, action), sort (latest/oldest), and refresh
+- Store admin hook `useGetEditHistory` and prefetch helper for edit history data
+- App topbar: "Edit history" link in store-admin dropdown
+
 ## [0.10.0] - 2026-02-12
 
 ### Added
