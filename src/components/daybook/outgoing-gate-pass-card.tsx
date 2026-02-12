@@ -39,52 +39,58 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
     () => entry.orderDetails ?? [],
     [entry.orderDetails]
   );
-  /** For each order detail size, gate pass numbers from incomingGatePassSnapshots that have that bag size. */
-  const refGatePassNosBySize = useMemo(() => {
-    const snapshots = entry.incomingGatePassSnapshots ?? [];
-    const map = new Map<string, number[]>();
-    for (const od of orderDetails) {
-      const size = od.size;
-      if (!size) continue;
-      const gatePassNos: number[] = [];
-      for (const snap of snapshots) {
-        const hasSize = snap.bagSizes?.some(
-          (bs) => (bs.name ?? '').trim() === size.trim()
-        );
-        if (hasSize) gatePassNos.push(snap.gatePassNo);
-      }
-      if (gatePassNos.length > 0) map.set(size, gatePassNos);
-    }
-    return map;
-  }, [entry.incomingGatePassSnapshots, orderDetails]);
 
-  /** For each order detail size, location string(s) from incomingGatePassSnapshots (chamber-floor-row). */
-  const locationBySize = useMemo(() => {
+  /**
+   * One row per (size, location) from incoming snapshots so the table shows
+   * separate rows for separate locations instead of concatenated locations.
+   */
+  const breakdownRows = useMemo(() => {
     const snapshots = entry.incomingGatePassSnapshots ?? [];
-    const map = new Map<string, string>();
-    for (const od of orderDetails) {
-      const size = (od.size ?? '').trim();
-      if (!size) continue;
-      const parts: string[] = [];
-      const seen = new Set<string>();
-      for (const snap of snapshots) {
-        for (const bs of snap.bagSizes ?? []) {
-          if ((bs.name ?? '').trim() !== size) continue;
-          const loc = bs.location;
-          if (!loc) continue;
-          const str = `${loc.chamber}-${loc.floor}-${loc.row}`;
-          if (!seen.has(str)) {
-            seen.add(str);
-            parts.push(str);
-          }
-        }
+    const rows: {
+      size: string;
+      location: string;
+      refNo: number;
+      initialQty: number;
+      issuedQty: number;
+      availableQty: number;
+    }[] = [];
+    for (const snap of snapshots) {
+      for (const bs of snap.bagSizes ?? []) {
+        const size = (bs.name ?? '').trim();
+        if (!size) continue;
+        const loc = bs.location;
+        const locationStr = loc
+          ? `${loc.chamber ?? ''}-${loc.floor ?? ''}-${loc.row ?? ''}`.replace(
+              /^-+$/,
+              ''
+            ) || '—'
+          : '—';
+        const init = bs.initialQuantity ?? 0;
+        const current = bs.currentQuantity ?? 0;
+        const issued = Math.max(0, init - current);
+        rows.push({
+          size,
+          location: locationStr,
+          refNo: snap.gatePassNo ?? 0,
+          initialQty: init,
+          issuedQty: issued,
+          availableQty: current,
+        });
       }
-      if (parts.length > 0) map.set(od.size ?? '', parts.join(', '));
     }
-    return map;
-  }, [entry.incomingGatePassSnapshots, orderDetails]);
+    return rows.sort(
+      (a, b) =>
+        a.size.localeCompare(b.size) || a.location.localeCompare(b.location)
+    );
+  }, [entry.incomingGatePassSnapshots]);
 
   const { totalIssued, totalAvailable } = useMemo(() => {
+    if (breakdownRows.length > 0) {
+      return {
+        totalIssued: breakdownRows.reduce((s, r) => s + r.issuedQty, 0),
+        totalAvailable: breakdownRows.reduce((s, r) => s + r.availableQty, 0),
+      };
+    }
     let issued = 0;
     let available = 0;
     for (const od of orderDetails) {
@@ -92,7 +98,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
       available += od.quantityAvailable ?? 0;
     }
     return { totalIssued: issued, totalAvailable: available };
-  }, [orderDetails]);
+  }, [breakdownRows, orderDetails]);
 
   const bags = totalIssued + totalAvailable;
 
@@ -253,57 +259,113 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                       </tr>
                     </thead>
                     <tbody>
-                      {orderDetails.map((od, idx) => {
-                        const initialQty =
-                          (od.quantityAvailable ?? 0) +
-                          (od.quantityIssued ?? 0);
-                        return (
-                          <tr
-                            key={`${od.size}-${idx}`}
-                            className="border-border/40 border-b"
-                          >
-                            <td className="px-1 py-2 font-medium sm:pr-3">
-                              {od.size ?? '—'}
-                            </td>
-                            <td className="text-foreground px-1 py-2 sm:pr-3">
-                              {locationBySize.get(od.size ?? '') ?? '—'}
-                            </td>
-                            <td className="px-1 py-2 sm:pr-3">
-                              <span className="inline-flex items-center gap-1 sm:gap-1.5">
-                                <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
-                                {(() => {
-                                  const direct =
-                                    od.incomingGatePassNo ?? od.gatePassNumber;
-                                  const fromSnapshots =
-                                    refGatePassNosBySize.get(od.size ?? '');
-                                  const refNos =
-                                    direct != null
-                                      ? [direct]
-                                      : (fromSnapshots ?? []);
-                                  if (refNos.length === 0) return '—';
-                                  return (
-                                    <span className="text-foreground font-medium">
-                                      {refNos.map((no) => `#${no}`).join(', ')}
-                                    </span>
-                                  );
-                                })()}
-                              </span>
-                            </td>
-                            <td className="px-1 py-2 text-right sm:pr-3">
-                              {initialQty.toLocaleString('en-IN')}
-                            </td>
-                            <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
-                              {(od.quantityIssued ?? 0).toLocaleString('en-IN')}
-                            </td>
-                            <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
-                              {(od.quantityAvailable ?? 0).toLocaleString(
-                                'en-IN'
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {orderDetails.length > 0 && (
+                      {breakdownRows.length > 0
+                        ? breakdownRows.map((row, idx) => (
+                            <tr
+                              key={`${row.size}-${row.location}-${row.refNo}-${idx}`}
+                              className="border-border/40 border-b"
+                            >
+                              <td className="px-1 py-2 font-medium sm:pr-3">
+                                {row.size}
+                              </td>
+                              <td className="text-foreground px-1 py-2 sm:pr-3">
+                                {row.location}
+                              </td>
+                              <td className="px-1 py-2 sm:pr-3">
+                                <span className="inline-flex items-center gap-1 sm:gap-1.5">
+                                  <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
+                                  <span className="text-foreground font-medium">
+                                    #{row.refNo}
+                                  </span>
+                                </span>
+                              </td>
+                              <td className="px-1 py-2 text-right sm:pr-3">
+                                {row.initialQty.toLocaleString('en-IN')}
+                              </td>
+                              <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
+                                {row.issuedQty.toLocaleString('en-IN')}
+                              </td>
+                              <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
+                                {row.availableQty.toLocaleString('en-IN')}
+                              </td>
+                            </tr>
+                          ))
+                        : orderDetails.map((od, idx) => {
+                            const initialQty =
+                              (od.quantityAvailable ?? 0) +
+                              (od.quantityIssued ?? 0);
+                            const locationBySize = (() => {
+                              const snapshots =
+                                entry.incomingGatePassSnapshots ?? [];
+                              const parts: string[] = [];
+                              const seen = new Set<string>();
+                              for (const snap of snapshots) {
+                                for (const bs of snap.bagSizes ?? []) {
+                                  if ((bs.name ?? '').trim() !== (od.size ?? '').trim()) continue;
+                                  const loc = bs.location;
+                                  if (!loc) continue;
+                                  const str = `${loc.chamber}-${loc.floor}-${loc.row}`;
+                                  if (!seen.has(str)) {
+                                    seen.add(str);
+                                    parts.push(str);
+                                  }
+                                }
+                              }
+                              return parts.length > 0 ? parts.join(', ') : '—';
+                            })();
+                            return (
+                              <tr
+                                key={`${od.size}-${idx}`}
+                                className="border-border/40 border-b"
+                              >
+                                <td className="px-1 py-2 font-medium sm:pr-3">
+                                  {od.size ?? '—'}
+                                </td>
+                                <td className="text-foreground px-1 py-2 sm:pr-3">
+                                  {locationBySize}
+                                </td>
+                                <td className="px-1 py-2 sm:pr-3">
+                                  <span className="inline-flex items-center gap-1 sm:gap-1.5">
+                                    <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
+                                    {(() => {
+                                      const direct =
+                                        od.incomingGatePassNo ?? od.gatePassNumber;
+                                      const fromSnapshots = (entry.incomingGatePassSnapshots ?? []).filter(
+                                        (s) =>
+                                          s.bagSizes?.some(
+                                            (bs) =>
+                                              (bs.name ?? '').trim() ===
+                                              (od.size ?? '').trim()
+                                          )
+                                      );
+                                      const refNos =
+                                        direct != null
+                                          ? [direct]
+                                          : fromSnapshots.map((s) => s.gatePassNo);
+                                      if (refNos.length === 0) return '—';
+                                      return (
+                                        <span className="text-foreground font-medium">
+                                          {refNos.map((no) => `#${no}`).join(', ')}
+                                        </span>
+                                      );
+                                    })()}
+                                  </span>
+                                </td>
+                                <td className="px-1 py-2 text-right sm:pr-3">
+                                  {initialQty.toLocaleString('en-IN')}
+                                </td>
+                                <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
+                                  {(od.quantityIssued ?? 0).toLocaleString('en-IN')}
+                                </td>
+                                <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
+                                  {(od.quantityAvailable ?? 0).toLocaleString(
+                                    'en-IN'
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      {(breakdownRows.length > 0 || orderDetails.length > 0) && (
                         <tr className="border-border/60 bg-muted/50 text-destructive border-t-2 font-semibold">
                           <td className="px-1 py-2.5 sm:pr-3" colSpan={3}>
                             Total
