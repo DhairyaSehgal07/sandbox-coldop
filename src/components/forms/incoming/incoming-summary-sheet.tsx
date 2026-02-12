@@ -143,7 +143,7 @@ export const IncomingSummarySheet = memo(function IncomingSummarySheet({
   variety,
   formValues,
   quantityRows,
-  sizeOrder,
+  sizeOrder: _sizeOrder,
   totalRent,
   isPending,
   isLoadingVoucher,

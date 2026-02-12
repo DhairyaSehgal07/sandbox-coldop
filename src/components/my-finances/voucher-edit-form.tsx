@@ -25,10 +25,7 @@ const VoucherEditForm = memo(function VoucherEditForm({
   hasChanges,
 }: VoucherEditFormProps) {
   return (
-    <form
-      onSubmit={onSubmit}
-      className="font-custom flex flex-col gap-4 pt-2"
-    >
+    <form onSubmit={onSubmit} className="font-custom flex flex-col gap-4 pt-2">
       {voucher && (
         <p className="font-custom text-muted-foreground text-sm">
           Voucher #{voucher.voucherNumber} — Date, debit and credit ledgers
@@ -49,8 +46,7 @@ const VoucherEditForm = memo(function VoucherEditForm({
             const n = v === '' ? undefined : parseFloat(v);
             setForm((prev) => ({
               ...prev,
-              amount:
-                n === undefined || Number.isNaN(n) ? undefined : n,
+              amount: n === undefined || Number.isNaN(n) ? undefined : n,
             }));
           }}
           className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"

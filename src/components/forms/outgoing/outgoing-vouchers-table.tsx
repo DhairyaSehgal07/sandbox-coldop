@@ -143,10 +143,7 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
                             );
                           }
                           return (
-                            <TableCell
-                              key={size}
-                              className="py-1 align-top"
-                            >
+                            <TableCell key={size} className="py-1 align-top">
                               <div className="flex flex-col gap-1.5">
                                 {details.map((detail) => {
                                   const cellKey = allocationKey(
@@ -182,7 +179,11 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
                                       location={detail.location}
                                       locationLabel={
                                         details.length > 1 && detail.location
-                                          ? [detail.location.chamber, detail.location.floor, detail.location.row]
+                                          ? [
+                                              detail.location.chamber,
+                                              detail.location.floor,
+                                              detail.location.row,
+                                            ]
                                               .filter(Boolean)
                                               .join(' ')
                                           : undefined

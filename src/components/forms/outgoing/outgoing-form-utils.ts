@@ -126,9 +126,7 @@ export function getBagDetailsForSize(
 ): BagDetailForSize[] {
   const trimmed = sizeName.trim();
   const bags =
-    pass.bagSizes?.filter(
-      (b) => (b?.name ?? '').trim() === trimmed
-    ) ?? [];
+    pass.bagSizes?.filter((b) => (b?.name ?? '').trim() === trimmed) ?? [];
   return bags.map((bag, index) => ({
     initialQuantity: bag.initialQuantity,
     currentQuantity: bag.currentQuantity,

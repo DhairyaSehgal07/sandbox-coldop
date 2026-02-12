@@ -726,7 +726,9 @@ export const OutgoingForm = memo(function OutgoingForm({
   const { data: nextVoucherNumber, isLoading: isLoadingVoucher } =
     useGetReceiptVoucherNumber('outgoing');
   const voucherNumberDisplay = isEditMode
-    ? (editEntry?.gatePassNo != null ? `#${editEntry.gatePassNo}` : '—')
+    ? editEntry?.gatePassNo != null
+      ? `#${editEntry.gatePassNo}`
+      : '—'
     : isLoadingVoucher
       ? '...'
       : nextVoucherNumber != null
@@ -854,10 +856,11 @@ export const OutgoingForm = memo(function OutgoingForm({
   });
 
   const farmerStorageLinkIdForPasses =
-    (form.state.values as { farmerStorageLinkId?: string }).farmerStorageLinkId ??
-    '';
-  const { data: incomingPasses = [] } =
-    useGetIncomingGatePassesOfSingleFarmer(farmerStorageLinkIdForPasses);
+    (form.state.values as { farmerStorageLinkId?: string })
+      .farmerStorageLinkId ?? '';
+  const { data: incomingPasses = [] } = useGetIncomingGatePassesOfSingleFarmer(
+    farmerStorageLinkIdForPasses
+  );
 
   const handleReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1133,24 +1136,24 @@ export const OutgoingForm = memo(function OutgoingForm({
       </form>
 
       {!isEditMode && (
-      <OutgoingSummarySheet
-        open={summaryOpen}
-        onOpenChange={setSummaryOpen}
-        pendingPayload={pendingPayload}
-        isSubmitting={createOutgoing.isPending}
-        onConfirm={() => {
-          if (!pendingPayload) return;
-          createOutgoing.mutate(pendingPayload, {
-            onSuccess: () => {
-              setSummaryOpen(false);
-              setPendingPayload(null);
-              form.reset();
-              setCellRemovedQuantities({});
-              setVouchersSectionKey((k) => k + 1);
-            },
-          });
-        }}
-      />
+        <OutgoingSummarySheet
+          open={summaryOpen}
+          onOpenChange={setSummaryOpen}
+          pendingPayload={pendingPayload}
+          isSubmitting={createOutgoing.isPending}
+          onConfirm={() => {
+            if (!pendingPayload) return;
+            createOutgoing.mutate(pendingPayload, {
+              onSuccess: () => {
+                setSummaryOpen(false);
+                setPendingPayload(null);
+                form.reset();
+                setCellRemovedQuantities({});
+                setVouchersSectionKey((k) => k + 1);
+              },
+            });
+          }}
+        />
       )}
     </main>
   );

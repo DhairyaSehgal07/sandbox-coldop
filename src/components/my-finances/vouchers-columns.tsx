@@ -57,14 +57,18 @@ export function getVouchersColumns(
       id: 'debitLedger',
       header: 'Debit',
       cell: ({ row }) => (
-        <span className="font-custom">{row.original.debitLedger?.name ?? '—'}</span>
+        <span className="font-custom">
+          {row.original.debitLedger?.name ?? '—'}
+        </span>
       ),
     },
     {
       id: 'creditLedger',
       header: 'Credit',
       cell: ({ row }) => (
-        <span className="font-custom">{row.original.creditLedger?.name ?? '—'}</span>
+        <span className="font-custom">
+          {row.original.creditLedger?.name ?? '—'}
+        </span>
       ),
     },
     {

@@ -286,20 +286,18 @@ export const IncomingFormBase = memo(function IncomingFormBase({
   const openSheetRef = useRef(false);
 
   const form = useForm({
-    defaultValues:
-      resolvedDefaultValues ??
-      {
-        manualParchiNumber: '',
-        farmerStorageLinkId: '',
-        date: new Date().toISOString().slice(0, 10),
-        variety: '',
-        truckNumber: '',
-        sizeQuantities: defaultSizeQuantities,
-        extraQuantityRows: [] as ExtraQuantityRow[],
-        locationBySize: {} as Record<string, LocationEntry>,
-        remarks: '',
-        manualGatePassNumber: undefined as number | undefined,
-      },
+    defaultValues: resolvedDefaultValues ?? {
+      manualParchiNumber: '',
+      farmerStorageLinkId: '',
+      date: new Date().toISOString().slice(0, 10),
+      variety: '',
+      truckNumber: '',
+      sizeQuantities: defaultSizeQuantities,
+      extraQuantityRows: [] as ExtraQuantityRow[],
+      locationBySize: {} as Record<string, LocationEntry>,
+      remarks: '',
+      manualGatePassNumber: undefined as number | undefined,
+    },
     validators: {
       onSubmit: formSchema as never,
     },
@@ -504,8 +502,8 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                 children={(field) => {
                   const hasSubmitError = Boolean(
                     field.state.meta.errorMap &&
-                      'onSubmit' in field.state.meta.errorMap &&
-                      field.state.meta.errorMap.onSubmit
+                    'onSubmit' in field.state.meta.errorMap &&
+                    field.state.meta.errorMap.onSubmit
                   );
                   const invalidFromValidation =
                     hasSubmitError ||
@@ -622,11 +620,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                       extraQuantityRows: state.values.extraQuantityRows ?? [],
                     })}
                   >
-                    {({
-                      variety,
-                      farmerStorageLinkId,
-                      extraQuantityRows,
-                    }) => {
+                    {({ variety, farmerStorageLinkId, extraQuantityRows }) => {
                       const sizeQuantities = field.state.value;
                       const fixedTotal = quantitySizes.reduce(
                         (sum, size) => sum + (sizeQuantities[size] ?? 0),

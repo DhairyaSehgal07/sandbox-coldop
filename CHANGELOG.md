@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-02-13
+
+### Added
+- My Finances: Financial Statements tab with Balance Sheet and Trading & P&amp;L Account
+- Balance Sheet component: displays assets (fixed/current), liabilities and equity from GET /ledgers/balance-sheet; loading and error states
+- Trading &amp; P&amp;L Account component: opening/closing stock, purchases, sales, direct expenses, gross profit, net profit/loss from ledgers
+- My Finances: Closing Balances tab with date range filter and ledger balances grouped by type/category
+- `useGetBalanceSheet` hook and types in `services/accounting/useGetBalanceSheet.tsx` for balance sheet API
+- Ledger View tab in My Finances for ledger-level view
+
+### Changed
+- My Finances: tab layout updated with Ledgers, Vouchers, Ledger View, Financial Statements, and Closing Balances
+- UI components and forms: styling/formatting updates (font-custom, class names) across shadcn components, app bottom nav, daybook cards, incoming/outgoing forms, mode toggle, Hero, and store
+
 ## [0.13.0] - 2026-02-12
 
 ### Added

@@ -71,14 +71,14 @@ export const EditOutgoingAllocations = memo(function EditOutgoingAllocations({
 
   return (
     <Card className="border-border/50 overflow-hidden shadow-sm">
-      <CardHeader className="border-border/40 border-b bg-muted/20 pb-4">
+      <CardHeader className="border-border/40 bg-muted/20 border-b pb-4">
         <CardTitle className="font-custom flex items-center gap-2 text-base font-semibold sm:text-lg">
           <Package className="text-primary h-5 w-5 shrink-0" />
           Issued quantities
         </CardTitle>
         <p className="text-muted-foreground font-custom mt-1 text-sm">
-          Update quantities below. These are the bags currently allocated to this
-          outgoing order.
+          Update quantities below. These are the bags currently allocated to
+          this outgoing order.
         </p>
       </CardHeader>
       <CardContent className="p-0">

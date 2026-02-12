@@ -35,10 +35,7 @@ const LedgerCreateForm = memo(function LedgerCreateForm({
   isPending,
 }: LedgerCreateFormProps) {
   return (
-    <form
-      onSubmit={onSubmit}
-      className="font-custom flex flex-col gap-4 pt-2"
-    >
+    <form onSubmit={onSubmit} className="font-custom flex flex-col gap-4 pt-2">
       <div className="space-y-2">
         <Label htmlFor="ledger-name">Name</Label>
         <Input

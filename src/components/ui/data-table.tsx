@@ -1,4 +1,3 @@
-import * as React from 'react';
 import {
   type ColumnDef,
   flexRender,
@@ -41,8 +40,8 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-md border">
-        <Table>
+      <div className="overflow-x-auto overflow-y-hidden rounded-md border">
+        <Table className="min-w-[640px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -80,7 +79,7 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="font-custom h-24 text-center text-muted-foreground"
+                  className="font-custom text-muted-foreground h-24 text-center"
                 >
                   No results.
                 </TableCell>
@@ -89,17 +88,17 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end gap-2">
-        <p className="font-custom text-muted-foreground flex-1 text-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
+        <p className="font-custom text-muted-foreground order-1 text-sm sm:flex-1">
           {table.getFilteredRowModel().rows.length} row(s)
         </p>
-        <div className="flex items-center gap-2">
+        <div className="order-2 flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="font-custom focus-visible:ring-primary min-h-9 flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-0 sm:flex-none"
           >
             Previous
           </Button>
@@ -108,7 +107,7 @@ export function DataTable<TData, TValue>({
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="font-custom focus-visible:ring-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="font-custom focus-visible:ring-primary min-h-9 flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:min-h-0 sm:flex-none"
           >
             Next
           </Button>

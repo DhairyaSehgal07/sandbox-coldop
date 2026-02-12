@@ -301,7 +301,11 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                               const seen = new Set<string>();
                               for (const snap of snapshots) {
                                 for (const bs of snap.bagSizes ?? []) {
-                                  if ((bs.name ?? '').trim() !== (od.size ?? '').trim()) continue;
+                                  if (
+                                    (bs.name ?? '').trim() !==
+                                    (od.size ?? '').trim()
+                                  )
+                                    continue;
                                   const loc = bs.location;
                                   if (!loc) continue;
                                   const str = `${loc.chamber}-${loc.floor}-${loc.row}`;
@@ -329,23 +333,29 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                                     <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
                                     {(() => {
                                       const direct =
-                                        od.incomingGatePassNo ?? od.gatePassNumber;
-                                      const fromSnapshots = (entry.incomingGatePassSnapshots ?? []).filter(
-                                        (s) =>
-                                          s.bagSizes?.some(
-                                            (bs) =>
-                                              (bs.name ?? '').trim() ===
-                                              (od.size ?? '').trim()
-                                          )
+                                        od.incomingGatePassNo ??
+                                        od.gatePassNumber;
+                                      const fromSnapshots = (
+                                        entry.incomingGatePassSnapshots ?? []
+                                      ).filter((s) =>
+                                        s.bagSizes?.some(
+                                          (bs) =>
+                                            (bs.name ?? '').trim() ===
+                                            (od.size ?? '').trim()
+                                        )
                                       );
                                       const refNos =
                                         direct != null
                                           ? [direct]
-                                          : fromSnapshots.map((s) => s.gatePassNo);
+                                          : fromSnapshots.map(
+                                              (s) => s.gatePassNo
+                                            );
                                       if (refNos.length === 0) return '—';
                                       return (
                                         <span className="text-foreground font-medium">
-                                          {refNos.map((no) => `#${no}`).join(', ')}
+                                          {refNos
+                                            .map((no) => `#${no}`)
+                                            .join(', ')}
                                         </span>
                                       );
                                     })()}
@@ -355,7 +365,9 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                                   {initialQty.toLocaleString('en-IN')}
                                 </td>
                                 <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
-                                  {(od.quantityIssued ?? 0).toLocaleString('en-IN')}
+                                  {(od.quantityIssued ?? 0).toLocaleString(
+                                    'en-IN'
+                                  )}
                                 </td>
                                 <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
                                   {(od.quantityAvailable ?? 0).toLocaleString(
@@ -365,7 +377,8 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                               </tr>
                             );
                           })}
-                      {(breakdownRows.length > 0 || orderDetails.length > 0) && (
+                      {(breakdownRows.length > 0 ||
+                        orderDetails.length > 0) && (
                         <tr className="border-border/60 bg-muted/50 text-destructive border-t-2 font-semibold">
                           <td className="px-1 py-2.5 sm:pr-3" colSpan={3}>
                             Total

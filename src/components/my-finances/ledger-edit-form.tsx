@@ -40,10 +40,7 @@ const LedgerEditForm = memo(function LedgerEditForm({
   const disabled = ledger?.isSystemLedger ?? false;
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="font-custom flex flex-col gap-4 pt-2"
-    >
+    <form onSubmit={onSubmit} className="font-custom flex flex-col gap-4 pt-2">
       <div className="space-y-2">
         <Label htmlFor="edit-ledger-name">Name</Label>
         <Input

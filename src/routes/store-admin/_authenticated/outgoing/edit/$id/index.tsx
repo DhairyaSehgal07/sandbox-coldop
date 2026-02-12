@@ -2,6 +2,8 @@ import { createFileRoute, useLocation } from '@tanstack/react-router';
 import OutgoingForm from '@/components/forms/outgoing';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 
+type OutgoingEditState = { entry?: DaybookEntry };
+
 export const Route = createFileRoute(
   '/store-admin/_authenticated/outgoing/edit/$id/'
 )({
@@ -11,7 +13,7 @@ export const Route = createFileRoute(
 function OutgoingEditPage() {
   const { id } = Route.useParams();
   const location = useLocation();
-  const entry = location.state?.entry as DaybookEntry | undefined;
+  const entry = (location.state as OutgoingEditState | undefined)?.entry;
 
   if (!entry) {
     return (

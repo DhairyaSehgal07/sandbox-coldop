@@ -64,14 +64,9 @@ const SummaryMetaRow = memo(function SummaryMetaRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      {Icon && (
-        <Icon
-          className="h-4 w-4 shrink-0 text-zinc-400"
-          aria-hidden
-        />
-      )}
+      {Icon && <Icon className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />}
       <div className="min-w-0">
-        <p className="font-custom text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+        <p className="font-custom text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
           {label}
         </p>
         <p className="font-custom truncate text-sm font-medium text-white">
@@ -96,8 +91,7 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
   const totalBags =
     pendingPayload?.incomingGatePasses.reduce(
       (sum, entry) =>
-        sum +
-        entry.allocations.reduce((a, b) => a + b.quantityToAllocate, 0),
+        sum + entry.allocations.reduce((a, b) => a + b.quantityToAllocate, 0),
       0
     ) ?? 0;
 
@@ -185,13 +179,13 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                           <table className="font-custom w-full border-collapse text-sm">
                             <thead>
                               <tr>
-                                <th className="border-b border-zinc-600/50 py-2 pr-3 text-left text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                                <th className="border-b border-zinc-600/50 py-2 pr-3 text-left text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
                                   Size
                                 </th>
-                                <th className="border-b border-zinc-600/50 px-2 py-2 text-left text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                                <th className="border-b border-zinc-600/50 px-2 py-2 text-left text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
                                   Location
                                 </th>
-                                <th className="border-b border-zinc-600/50 px-2 py-2 text-right text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                                <th className="border-b border-zinc-600/50 px-2 py-2 text-right text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
                                   Allocated
                                 </th>
                               </tr>
@@ -210,8 +204,7 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                                 };
                                 const loc = allocWithLocation.location;
                                 const locationStr =
-                                  loc &&
-                                  (loc.chamber ?? loc.floor ?? loc.row)
+                                  loc && (loc.chamber ?? loc.floor ?? loc.row)
                                     ? [loc.chamber, loc.floor, loc.row]
                                         .filter(Boolean)
                                         .join(' ')
@@ -226,10 +219,10 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                                     <td className="border-b border-zinc-600/40 px-2 py-2 text-zinc-300">
                                       {locationStr}
                                     </td>
-                                    <td className="border-b border-zinc-600/40 px-2 py-2 text-right font-medium text-primary">
-                                      {Number(
-                                        alloc.quantityToAllocate
-                                      ).toFixed(1)}
+                                    <td className="text-primary border-b border-zinc-600/40 px-2 py-2 text-right font-medium">
+                                      {Number(alloc.quantityToAllocate).toFixed(
+                                        1
+                                      )}
                                     </td>
                                   </tr>
                                 );
@@ -243,7 +236,7 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
 
                   {pendingPayload.remarks?.trim() && (
                     <div className="mx-4 mb-4 rounded-lg bg-zinc-800/60 px-3 py-2 sm:px-4">
-                      <p className="font-custom text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                      <p className="font-custom text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
                         Remarks
                       </p>
                       <p className="font-custom mt-1 text-xs text-zinc-300">
@@ -285,10 +278,7 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                   >
                     {isSubmitting ? (
                       <span className="flex items-center gap-2">
-                        <Loader2
-                          className="h-4 w-4 animate-spin"
-                          aria-hidden
-                        />
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                         Creating...
                       </span>
                     ) : (
