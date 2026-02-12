@@ -1,6 +1,8 @@
 import { createFileRoute, useLocation } from '@tanstack/react-router';
-import IncomingForm from '@/components/forms/incoming';
+import { EditIncomingForm } from '@/components/forms/incoming';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
+
+type IncomingEditState = { entry?: DaybookEntry };
 
 export const Route = createFileRoute(
   '/store-admin/_authenticated/incoming/edit/$id/'
@@ -11,7 +13,7 @@ export const Route = createFileRoute(
 function IncomingEditPage() {
   const { id } = Route.useParams();
   const location = useLocation();
-  const entry = location.state?.entry as DaybookEntry | undefined;
+  const entry = (location.state as IncomingEditState | undefined)?.entry;
 
   if (!entry) {
     return (
@@ -23,5 +25,5 @@ function IncomingEditPage() {
     );
   }
 
-  return <IncomingForm editEntry={entry} editId={id} />;
+  return <EditIncomingForm editEntry={entry} editId={id} />;
 }
