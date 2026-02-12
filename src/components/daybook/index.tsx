@@ -43,11 +43,13 @@ import {
   FileText,
 } from 'lucide-react';
 
-// Used in commented DaybookEntryCard – uncomment when cards are re-enabled:
-// ClipboardList, Package, Truck
-// import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-// import { Progress } from '@/components/ui/progress';
-// import { Empty, EmptyHeader, EmptyTitle, EmptyContent, EmptyMedia } from '@/components/ui/empty';
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyMedia,
+} from '@/components/ui/empty';
 
 import { useGetDaybook } from '@/services/store-admin/functions/useGetDaybook';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
@@ -187,41 +189,46 @@ const DaybookPage = memo(function DaybookPage() {
     ? [...(searchResult?.incoming ?? []), ...(searchResult?.outgoing ?? [])]
     : (data?.data ?? []);
 
+  /** API message when daybook has no orders (e.g. "Cold storage doesn't have any orders") */
+  const emptyMessage = data?.message;
+
   return (
-    <main className="mx-auto max-w-7xl p-4">
+    <main className="mx-auto max-w-7xl p-2 sm:p-4 lg:p-6">
       <div className="space-y-6">
-        {/* Header */}
-        <Item variant="outline">
-          <ItemHeader>
+        {/* Header: count + refresh */}
+        <Item variant="outline" size="sm" className="rounded-xl shadow-sm">
+          <ItemHeader className="h-full">
             <div className="flex items-center gap-3">
-              <ItemMedia variant="icon">
-                <Receipt className="text-primary" />
+              <ItemMedia variant="icon" className="rounded-lg">
+                <Receipt className="text-primary h-5 w-5" />
               </ItemMedia>
-              <ItemTitle>
+              <ItemTitle className="font-custom text-sm font-semibold sm:text-base">
                 {data?.pagination != null
                   ? `${data.pagination.totalItems} vouchers`
                   : 'Daybook'}
               </ItemTitle>
             </div>
-
             <ItemActions>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => refetch()}
                 disabled={isFetching}
+                onClick={() => refetch()}
+                className="font-custom h-8 gap-2 rounded-lg px-3"
                 aria-busy={isFetching}
               >
                 <RefreshCw
-                  className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+                  className={`h-4 w-4 shrink-0 ${
+                    isFetching ? 'animate-spin' : ''
+                  }`}
                 />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
             </ItemActions>
           </ItemHeader>
         </Item>
 
-        {/* Search / Filters */}
+        {/* Search + filters (same layout/spacing as people page) */}
         <Item
           variant="outline"
           size="sm"
@@ -250,13 +257,13 @@ const DaybookPage = memo(function DaybookPage() {
             </div>
             <Button
               variant="default"
-              size="default"
-              className="font-custom focus-visible:ring-primary shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
+              size="sm"
+              className="font-custom focus-visible:ring-primary h-8 shrink-0 gap-2 rounded-lg px-3 focus-visible:ring-2 focus-visible:ring-offset-2"
               onClick={handleSearchSubmit}
               disabled={!searchReceipt.trim() || searchDaybook.isPending}
             >
               {searchDaybook.isPending ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
+                <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
               ) : (
                 'Search'
               )}
@@ -264,8 +271,8 @@ const DaybookPage = memo(function DaybookPage() {
             {isSearchMode && (
               <Button
                 variant="outline"
-                size="default"
-                className="font-custom focus-visible:ring-primary shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
+                size="sm"
+                className="font-custom focus-visible:ring-primary h-8 shrink-0 gap-2 rounded-lg px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 onClick={handleClearSearch}
               >
                 Clear
@@ -273,19 +280,18 @@ const DaybookPage = memo(function DaybookPage() {
             )}
           </div>
 
-          <ItemFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <ItemFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex w-full flex-col gap-3 sm:flex-1 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-4">
               {/* Orders filter */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="font-custom focus-visible:ring-primary w-full min-w-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto sm:min-w-40"
+                    size="sm"
+                    className="font-custom focus-visible:ring-primary h-8 w-full gap-2 rounded-lg px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto"
                   >
-                    <span className="hidden sm:inline">Orders: </span>
-                    <span className="sm:hidden">Orders: </span>
-                    {ORDER_LABELS[orderFilter]}
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                    Orders: {ORDER_LABELS[orderFilter]}
+                    <ChevronDown className="h-4 w-4 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
 
@@ -316,12 +322,11 @@ const DaybookPage = memo(function DaybookPage() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="font-custom focus-visible:ring-primary w-full min-w-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto sm:min-w-40"
+                    size="sm"
+                    className="font-custom focus-visible:ring-primary h-8 w-full gap-2 rounded-lg px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto"
                   >
-                    <span className="hidden sm:inline">Sort: </span>
-                    <span className="sm:hidden">Sort: </span>
-                    {SORT_LABELS[sortOrder]}
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                    Sort: {SORT_LABELS[sortOrder]}
+                    <ChevronDown className="h-4 w-4 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
 
@@ -342,10 +347,10 @@ const DaybookPage = memo(function DaybookPage() {
               </DropdownMenu>
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons (primary/secondary same width & spacing as people "New Farmer") */}
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
               <Button
-                className="font-custom h-10 w-full shrink-0 sm:w-auto"
+                className="font-custom h-10 w-full gap-2 sm:w-auto"
                 asChild
               >
                 <Link to="/store-admin/incoming">
@@ -355,7 +360,7 @@ const DaybookPage = memo(function DaybookPage() {
               </Button>
               <Button
                 variant="secondary"
-                className="font-custom h-10 w-full shrink-0 sm:w-auto"
+                className="font-custom h-10 w-full gap-2 sm:w-auto"
                 asChild
               >
                 <Link to="/store-admin/outgoing">
@@ -365,7 +370,7 @@ const DaybookPage = memo(function DaybookPage() {
               </Button>
               <Button
                 variant="secondary"
-                className="font-custom h-10 w-full shrink-0 sm:w-auto"
+                className="font-custom h-10 w-full gap-2 sm:w-auto"
                 asChild
               >
                 <a href="#">
@@ -393,9 +398,17 @@ const DaybookPage = memo(function DaybookPage() {
             </p>
           )}
           {!isSearchMode && !isLoading && !isError && entries.length === 0 && (
-            <p className="font-custom text-muted-foreground text-sm">
-              No vouchers to show.
-            </p>
+            <Empty className="font-custom border-border/40 rounded-xl border py-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileText className="text-muted-foreground size-6" />
+                </EmptyMedia>
+                <EmptyTitle>No orders yet</EmptyTitle>
+                <EmptyDescription>
+                  {emptyMessage ?? 'No vouchers to show.'}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           )}
           {isSearchMode && searchResult != null && entries.length === 0 && (
             <p className="font-custom text-muted-foreground text-sm">

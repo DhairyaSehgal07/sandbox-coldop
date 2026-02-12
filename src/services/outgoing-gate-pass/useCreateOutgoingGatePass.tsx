@@ -1,8 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import * as z from 'zod';
+import { queryClient } from '@/lib/queryClient';
 import storeAdminAxiosClient from '@/lib/axios';
+import { daybookKeys } from '@/services/store-admin/functions/useGetDaybook';
 import { voucherNumberKeys } from '@/services/store-admin/functions/useGetVoucherNumber';
 
 /* -------------------------------------------------
@@ -104,8 +106,6 @@ function getCreateOutgoingGatePassError(
  * Validates payload with Zod. On success/error shows toast via sonner.
  */
 export function useCreateOutgoingGatePass() {
-  const queryClient = useQueryClient();
-
   return useMutation<
     CreateOutgoingGatePassSuccessResponse,
     AxiosError<CreateOutgoingGatePassApiError>,
@@ -145,6 +145,7 @@ export function useCreateOutgoingGatePass() {
       toast.success(data.message ?? 'Outgoing gate pass created', {
         description: data.data ? 'You can view it in daybook' : undefined,
       });
+      void queryClient.invalidateQueries({ queryKey: daybookKeys.all });
       void queryClient.invalidateQueries({ queryKey: ['incoming-gate-pass'] });
       void queryClient.invalidateQueries({ queryKey: ['outgoing-gate-pass'] });
       void queryClient.invalidateQueries({

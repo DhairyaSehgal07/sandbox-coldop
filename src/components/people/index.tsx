@@ -173,10 +173,11 @@ const PeoplePage = memo(function PeoplePage() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="font-custom focus-visible:ring-primary w-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto"
+                  size="sm"
+                  className="font-custom focus-visible:ring-primary h-8 w-full gap-2 rounded-lg px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto"
                 >
                   Sort by: {sortBy}
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                  <ChevronDown className="h-4 w-4 shrink-0" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>

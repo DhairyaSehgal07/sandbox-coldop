@@ -94,6 +94,7 @@ export interface DaybookPagination {
 
 export interface DaybookApiResponse {
   status: string;
+  message?: string;
   data: DaybookEntry[];
   pagination: DaybookPagination;
 }
@@ -132,10 +133,16 @@ export const daybookKeys = {
 const MIN_LIMIT = 1;
 const MAX_LIMIT = 100;
 
+export interface DaybookQueryResult {
+  data: DaybookEntry[];
+  pagination: DaybookPagination;
+  message?: string;
+}
+
 /** Fetcher used by queryOptions and prefetch */
 async function fetchDaybook(
   params: GetDaybookParams = {}
-): Promise<{ data: DaybookEntry[]; pagination: DaybookPagination }> {
+): Promise<DaybookQueryResult> {
   const {
     type,
     sortBy,
@@ -156,13 +163,23 @@ async function fetchDaybook(
     { params: { type, sortBy, page: pageNum, limit: limitNum } }
   );
 
+  /** API returns status "Fail" with message when there are no orders (e.g. "Cold storage doesn't have any orders") */
+  if (data.status === 'Fail' && data.pagination?.totalItems === 0) {
+    return {
+      data: [],
+      pagination: data.pagination,
+      message: data.message,
+    };
+  }
+
   if (data.status !== 'Success' || !Array.isArray(data.data)) {
-    throw new Error('Failed to fetch daybook');
+    throw new Error(data.message ?? 'Failed to fetch daybook');
   }
 
   return {
     data: data.data,
     pagination: data.pagination,
+    message: data.message,
   };
 }
 

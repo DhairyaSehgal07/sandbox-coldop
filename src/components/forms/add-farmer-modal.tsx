@@ -198,7 +198,7 @@ export const AddFarmerModal = memo(function AddFarmerModal({
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="font-custom h-10 w-full sm:w-auto">
+        <Button className="font-custom h-10 w-full gap-2 sm:w-auto">
           <Plus className="h-4 w-4 shrink-0" />
           New Farmer
         </Button>

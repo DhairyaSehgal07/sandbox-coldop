@@ -2,7 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import * as z from 'zod';
+import { queryClient } from '@/lib/queryClient';
 import storeAdminAxiosClient from '@/lib/axios';
+import { daybookKeys } from '@/services/store-admin/functions/useGetDaybook';
 
 /* -------------------------------------------------
    API request body schema (matches backend)
@@ -126,6 +128,7 @@ export function useCreateIncomingGatePass() {
       toast.success(data.message ?? 'Incoming gate pass created', {
         description: data.data ? 'You can view it in daybook' : undefined,
       });
+      void queryClient.invalidateQueries({ queryKey: daybookKeys.all });
     },
 
     onError: (error: AxiosError<CreateIncomingGatePassApiError> | Error) => {
