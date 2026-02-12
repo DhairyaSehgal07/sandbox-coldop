@@ -9,9 +9,19 @@ import { voucherNumberKeys } from '@/services/store-admin/functions/useGetVouche
    API request body schema (matches backend)
 ------------------------------------------------- */
 
+const locationDisplaySchema = z.object({
+  chamber: z.string().optional(),
+  floor: z.string().optional(),
+  row: z.string().optional(),
+});
+
 const allocationSchema = z.object({
   size: z.string().min(1, 'Size is required'),
   quantityToAllocate: z.number().int().min(1, 'Quantity must be at least 1'),
+  /** When an incoming pass has the same size at multiple locations, bagIndex identifies which slot (0, 1, …). */
+  bagIndex: z.number().int().min(0).optional(),
+  /** Location (Ch/F/R) for display in summary; not sent to backend. */
+  location: locationDisplaySchema.optional(),
 });
 
 const incomingGatePassEntrySchema = z.object({

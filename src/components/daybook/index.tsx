@@ -30,6 +30,9 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader } from '@/components/ui/card';
+
 import {
   Search,
   ChevronDown,
@@ -73,122 +76,56 @@ const SORT_LABELS: Record<SortOrder, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Entry Card (UI only) – commented out for now, show JSON instead */
+/* Skeleton loader */
 /* ------------------------------------------------------------------ */
 
-// const DaybookEntryCard = memo(function DaybookEntryCard() {
-//   return (
-//     <Card className="overflow-hidden p-0">
-//       {/* Pipeline */}
-//       <div className="border-border bg-muted/30 px-4 py-3">
-//         <div className="text-muted-foreground flex justify-between text-sm">
-//           <span>Pipeline</span>
-//           <span>60%</span>
-//         </div>
-//         <Progress value={60} className="mt-2 h-2" />
-//       </div>
-//
-//       {/* Summary */}
-//       <div className="border-b px-4 py-3 text-sm">
-//         <div className="flex gap-6">
-//           <span>Bags: 120</span>
-//           <span>Stored: 80</span>
-//           <span>Dispatch: 20</span>
-//         </div>
-//       </div>
-//
-//       {/* Tabs */}
-//       <Tabs defaultValue="incoming">
-//         <TabsList className="w-full overflow-x-auto">
-//           <TabsTrigger value="incoming">Incoming</TabsTrigger>
-//           <TabsTrigger value="grading">Grading</TabsTrigger>
-//           <TabsTrigger value="storage">Storage</TabsTrigger>
-//           <TabsTrigger value="nikasi">Dispatch</TabsTrigger>
-//           <TabsTrigger value="outgoing">Outgoing</TabsTrigger>
-//         </TabsList>
-//
-//         {/* Incoming */}
-//         <TabsContent value="incoming">
-//           <div className="p-4 text-sm">
-//             Incoming voucher information goes here.
-//           </div>
-//         </TabsContent>
-//
-//         {/* Grading */}
-//         <TabsContent value="grading">
-//           <Empty className="py-8">
-//             <EmptyHeader>
-//               <EmptyMedia variant="icon">
-//                 <ClipboardList />
-//               </EmptyMedia>
-//               <EmptyTitle>No grading voucher</EmptyTitle>
-//             </EmptyHeader>
-//             <EmptyContent>
-//               <Button asChild>
-//                 <a href="#">Add Grading Voucher</a>
-//               </Button>
-//             </EmptyContent>
-//           </Empty>
-//         </TabsContent>
-//
-//         {/* Storage */}
-//         <TabsContent value="storage">
-//           <Empty className="py-8">
-//             <EmptyHeader>
-//               <EmptyMedia variant="icon">
-//                 <Package />
-//               </EmptyMedia>
-//               <EmptyTitle>No storage voucher</EmptyTitle>
-//             </EmptyHeader>
-//             <EmptyContent>
-//               <Button asChild>
-//                 <a href="#">Add Storage Voucher</a>
-//               </Button>
-//             </EmptyContent>
-//           </Empty>
-//         </TabsContent>
-//
-//         {/* Dispatch */}
-//         <TabsContent value="nikasi">
-//           <Empty className="py-8">
-//             <EmptyHeader>
-//               <EmptyMedia variant="icon">
-//                 <Truck />
-//               </EmptyMedia>
-//               <EmptyTitle>No dispatch voucher</EmptyTitle>
-//             </EmptyHeader>
-//             <EmptyContent>
-//               <Button asChild>
-//                 <a href="#">Add Dispatch Voucher</a>
-//               </Button>
-//             </EmptyContent>
-//           </Empty>
-//         </TabsContent>
-//
-//         {/* Outgoing */}
-//         <TabsContent value="outgoing">
-//           <Empty className="py-8">
-//             <EmptyHeader>
-//               <EmptyMedia variant="icon">
-//                 <ArrowRightFromLine />
-//               </EmptyMedia>
-//               <EmptyTitle>No outgoing voucher</EmptyTitle>
-//             </EmptyHeader>
-//             <EmptyContent>
-//               <Button asChild>
-//                 <a href="#">Add Outgoing Voucher</a>
-//               </Button>
-//             </EmptyContent>
-//           </Empty>
-//         </TabsContent>
-//       </Tabs>
-//     </Card>
-//   );
-// });
+function DaybookSkeleton() {
+  return (
+    <div className="w-full space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <Card
+          key={i}
+          className="border-border/40 overflow-hidden pt-0 shadow-sm"
+        >
+          <div className="w-full px-4 py-4 sm:px-5 sm:py-5">
+            <CardHeader className="px-0 pt-0 pb-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-1.5 w-1.5 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-32" />
+                  </div>
+                  <Skeleton className="h-3.5 w-24" />
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+              </div>
+            </CardHeader>
 
-/* ------------------------------------------------------------------ */
-/* Page */
-/* ------------------------------------------------------------------ */
+            <div className="mb-4 grid w-full grid-cols-2 gap-4 lg:grid-cols-4">
+              {[...Array(4)].map((_, j) => (
+                <div key={j} className="min-w-0 space-y-1">
+                  <Skeleton className="h-3.5 w-14" />
+                  <Skeleton className="h-4 w-full max-w-28" />
+                </div>
+              ))}
+            </div>
+
+            <div className="border-border/50 flex w-full items-center justify-between border-t pt-4">
+              <Skeleton className="h-8 w-20" />
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-8 rounded-md" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 const DaybookPage = memo(function DaybookPage() {
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
@@ -197,12 +134,13 @@ const DaybookPage = memo(function DaybookPage() {
   const [limit, setLimit] = useState(10);
   const [searchReceipt, setSearchReceipt] = useState('');
 
-  const { data, isLoading, isError, error, refetch } = useGetDaybook({
-    type: orderFilter,
-    sortBy: sortOrder,
-    page,
-    limit,
-  });
+  const { data, isLoading, isError, error, isFetching, refetch } =
+    useGetDaybook({
+      type: orderFilter,
+      sortBy: sortOrder,
+      page,
+      limit,
+    });
 
   const searchDaybook = useSearchDaybook();
   const searchResult = searchDaybook.data;
@@ -257,7 +195,7 @@ const DaybookPage = memo(function DaybookPage() {
           <ItemHeader>
             <div className="flex items-center gap-3">
               <ItemMedia variant="icon">
-                <Receipt />
+                <Receipt className="text-primary" />
               </ItemMedia>
               <ItemTitle>
                 {data?.pagination != null
@@ -271,10 +209,11 @@ const DaybookPage = memo(function DaybookPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => refetch()}
-                disabled={isLoading}
+                disabled={isFetching}
+                aria-busy={isFetching}
               >
                 <RefreshCw
-                  className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                  className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
                 />
                 Refresh
               </Button>
@@ -445,11 +384,7 @@ const DaybookPage = memo(function DaybookPage() {
               Search failed. Please try again.
             </p>
           )}
-          {!isSearchMode && isLoading && (
-            <p className="font-custom text-muted-foreground text-sm">
-              Loading…
-            </p>
-          )}
+          {!isSearchMode && isLoading && <DaybookSkeleton />}
           {!isSearchMode && isError && (
             <p className="font-custom text-destructive text-sm">
               {error instanceof Error

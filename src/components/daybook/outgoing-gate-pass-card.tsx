@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -174,9 +175,20 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
           </Button>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 px-3 text-xs">
-              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-              Edit
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-xs"
+              asChild
+            >
+              <Link
+                to="/store-admin/outgoing/edit/$id"
+                params={{ id: entry._id }}
+                state={{ entry } as Record<string, unknown>}
+              >
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                Edit
+              </Link>
             </Button>
             <Button
               variant="outline"

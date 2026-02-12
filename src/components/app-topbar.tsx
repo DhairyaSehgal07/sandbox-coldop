@@ -134,6 +134,9 @@ const PageTitleComponent = () => {
     if (pathname.match(/^\/store-admin\/incoming\/edit\/[^/]+$/)) {
       return 'Edit Incoming';
     }
+    if (pathname.match(/^\/store-admin\/outgoing\/edit\/[^/]+$/)) {
+      return 'Edit Outgoing';
+    }
 
     const segments = pathname.split('/').filter(Boolean);
     const last = segments.at(-1) ?? '';

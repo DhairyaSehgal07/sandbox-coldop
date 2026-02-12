@@ -2,12 +2,43 @@ import type {
   IncomingGatePassItem,
   IncomingGatePassBagSizeLocation,
 } from '@/services/incoming-gate-pass/useGetIncomingGatePassesOfSingleFarmer';
+import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 
-/** Delimiter for allocation map keys (passId + sizeName). Use so size names with '-' parse correctly. */
+/** Delimiter for allocation map keys (passId + sizeName + optional bagIndex). Use so size names with '-' parse correctly. */
 export const ALLOCATION_KEY_DELIMITER = '::';
 
-export function allocationKey(passId: string, sizeName: string): string {
-  return `${passId}${ALLOCATION_KEY_DELIMITER}${sizeName}`;
+/**
+ * Allocation key for one (pass, size) slot. When an incoming pass has multiple bag entries
+ * for the same size (e.g. same size at 2 locations), bagIndex distinguishes them (0, 1, …).
+ */
+export function allocationKey(
+  passId: string,
+  sizeName: string,
+  bagIndex: number = 0
+): string {
+  return `${passId}${ALLOCATION_KEY_DELIMITER}${sizeName}${ALLOCATION_KEY_DELIMITER}${bagIndex}`;
+}
+
+/** Parse allocation key into passId, sizeName, bagIndex. Handles legacy keys with no bagIndex (treated as 0). */
+export function parseAllocationKey(key: string): {
+  passId: string;
+  sizeName: string;
+  bagIndex: number;
+} | null {
+  const parts = key.split(ALLOCATION_KEY_DELIMITER);
+  if (parts.length < 2) return null;
+  const passId = parts[0]!;
+  const bagIndex =
+    parts.length >= 3 ? parseInt(parts[parts.length - 1]!, 10) : 0;
+  const sizeName =
+    parts.length >= 3
+      ? parts.slice(1, -1).join(ALLOCATION_KEY_DELIMITER)
+      : parts[1]!;
+  return {
+    passId,
+    sizeName,
+    bagIndex: Number.isNaN(bagIndex) ? 0 : bagIndex,
+  };
 }
 
 export interface IncomingGatePassDisplayGroup {
@@ -61,7 +92,16 @@ export function groupIncomingPassesByDate(
   });
 }
 
-/** Get bag size detail for a given size name, or null if not present. */
+/** Single bag slot detail (one row in bagSizes with matching size). */
+export interface BagDetailForSize {
+  initialQuantity: number;
+  currentQuantity: number;
+  location?: IncomingGatePassBagSizeLocation;
+  /** Index among bags with this size in the pass (0, 1, …). */
+  bagIndex: number;
+}
+
+/** Get the first bag detail for a given size (backward compat). */
 export function getBagDetailForSize(
   pass: IncomingGatePassItem,
   sizeName: string
@@ -70,13 +110,31 @@ export function getBagDetailForSize(
   currentQuantity: number;
   location?: IncomingGatePassBagSizeLocation;
 } | null {
-  const bag = pass.bagSizes?.find((b) => b?.name?.trim() === sizeName.trim());
-  if (!bag) return null;
+  const first = getBagDetailsForSize(pass, sizeName)[0];
+  if (!first) return null;
   return {
+    initialQuantity: first.initialQuantity,
+    currentQuantity: first.currentQuantity,
+    location: first.location,
+  };
+}
+
+/** Get all bag details for a given size. When an incoming order has the same size at multiple locations, returns one entry per location so the user can choose from which to extract. */
+export function getBagDetailsForSize(
+  pass: IncomingGatePassItem,
+  sizeName: string
+): BagDetailForSize[] {
+  const trimmed = sizeName.trim();
+  const bags =
+    pass.bagSizes?.filter(
+      (b) => (b?.name ?? '').trim() === trimmed
+    ) ?? [];
+  return bags.map((bag, index) => ({
     initialQuantity: bag.initialQuantity,
     currentQuantity: bag.currentQuantity,
     location: bag.location,
-  };
+    bagIndex: index,
+  }));
 }
 
 /** Collect unique chamber, floor, row values from all bag sizes across passes. */
@@ -123,4 +181,75 @@ export function passMatchesLocationFilters(
     return true;
   }
   return false;
+}
+
+/** Single row for edit-mode allocations (ref voucher, size, location, quantity). */
+export interface EditAllocationRow {
+  key: string;
+  passId: string;
+  gatePassNo: number;
+  size: string;
+  location: string;
+  quantityIssued: number;
+}
+
+/** Build allocation key -> quantity from a daybook outgoing entry (for edit form initial state). */
+export function buildInitialAllocationsFromEntry(
+  entry: DaybookEntry | null | undefined
+): Record<string, number> {
+  if (!entry?.orderDetails?.length) return {};
+  const snapshots = entry.incomingGatePassSnapshots ?? [];
+  const result: Record<string, number> = {};
+  for (const od of entry.orderDetails) {
+    const qty = od.quantityIssued ?? 0;
+    if (qty <= 0) continue;
+    const size = (od.size ?? '').trim();
+    if (!size) continue;
+    const passNo = od.incomingGatePassNo ?? od.gatePassNumber;
+    const snapshot =
+      passNo != null
+        ? snapshots.find((s) => s.gatePassNo === passNo)
+        : snapshots.find((s) =>
+            s.bagSizes?.some((b) => (b.name ?? '').trim() === size)
+          );
+    const passId = snapshot?._id;
+    const bagIndex = (od as { bagIndex?: number }).bagIndex ?? 0;
+    if (passId) result[allocationKey(passId, size, bagIndex)] = qty;
+  }
+  return result;
+}
+
+/** Build display rows for edit allocations from entry + current cellRemovedQuantities. One row per (pass, size, location) so multiple locations for same size are shown. */
+export function getEditAllocationRows(
+  entry: DaybookEntry | null | undefined,
+  cellRemovedQuantities: Record<string, number>
+): EditAllocationRow[] {
+  if (!entry?.incomingGatePassSnapshots?.length) return [];
+  const snapshots = entry.incomingGatePassSnapshots;
+  const rows: EditAllocationRow[] = [];
+  for (const snap of snapshots) {
+    const sizeToIndex = new Map<string, number>();
+    for (const bag of snap.bagSizes ?? []) {
+      const size = (bag.name ?? '').trim();
+      if (!size) continue;
+      const bagIndex = sizeToIndex.get(size) ?? 0;
+      sizeToIndex.set(size, bagIndex + 1);
+      const key = allocationKey(snap._id, size, bagIndex);
+      const qty = cellRemovedQuantities[key] ?? 0;
+      if (qty <= 0) continue;
+      const loc = bag.location;
+      const locationStr = loc
+        ? [loc.chamber, loc.floor, loc.row].filter(Boolean).join(' · ') || '—'
+        : '—';
+      rows.push({
+        key,
+        passId: snap._id,
+        gatePassNo: snap.gatePassNo,
+        size,
+        location: locationStr,
+        quantityIssued: qty,
+      });
+    }
+  }
+  return rows;
 }

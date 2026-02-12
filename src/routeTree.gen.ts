@@ -18,6 +18,7 @@ import { Route as StoreAdminAuthenticatedOutgoingIndexRouteImport } from './rout
 import { Route as StoreAdminAuthenticatedIncomingIndexRouteImport } from './routes/store-admin/_authenticated/incoming/index'
 import { Route as StoreAdminAuthenticatedDaybookIndexRouteImport } from './routes/store-admin/_authenticated/daybook/index'
 import { Route as StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRouteImport } from './routes/store-admin/_authenticated/people/$farmerStorageLinkId/index'
+import { Route as StoreAdminAuthenticatedOutgoingEditIdIndexRouteImport } from './routes/store-admin/_authenticated/outgoing/edit/$id/index'
 import { Route as StoreAdminAuthenticatedIncomingEditIdIndexRouteImport } from './routes/store-admin/_authenticated/incoming/edit/$id/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -70,6 +71,12 @@ const StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute =
     path: '/people/$farmerStorageLinkId/',
     getParentRoute: () => StoreAdminAuthenticatedRoute,
   } as any)
+const StoreAdminAuthenticatedOutgoingEditIdIndexRoute =
+  StoreAdminAuthenticatedOutgoingEditIdIndexRouteImport.update({
+    id: '/outgoing/edit/$id/',
+    path: '/outgoing/edit/$id/',
+    getParentRoute: () => StoreAdminAuthenticatedRoute,
+  } as any)
 const StoreAdminAuthenticatedIncomingEditIdIndexRoute =
   StoreAdminAuthenticatedIncomingEditIdIndexRouteImport.update({
     id: '/incoming/edit/$id/',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/store-admin/people/': typeof StoreAdminAuthenticatedPeopleIndexRoute
   '/store-admin/people/$farmerStorageLinkId/': typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
   '/store-admin/incoming/edit/$id/': typeof StoreAdminAuthenticatedIncomingEditIdIndexRoute
+  '/store-admin/outgoing/edit/$id/': typeof StoreAdminAuthenticatedOutgoingEditIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/store-admin/people': typeof StoreAdminAuthenticatedPeopleIndexRoute
   '/store-admin/people/$farmerStorageLinkId': typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
   '/store-admin/incoming/edit/$id': typeof StoreAdminAuthenticatedIncomingEditIdIndexRoute
+  '/store-admin/outgoing/edit/$id': typeof StoreAdminAuthenticatedOutgoingEditIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -113,6 +122,7 @@ export interface FileRoutesById {
   '/store-admin/_authenticated/people/': typeof StoreAdminAuthenticatedPeopleIndexRoute
   '/store-admin/_authenticated/people/$farmerStorageLinkId/': typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
   '/store-admin/_authenticated/incoming/edit/$id/': typeof StoreAdminAuthenticatedIncomingEditIdIndexRoute
+  '/store-admin/_authenticated/outgoing/edit/$id/': typeof StoreAdminAuthenticatedOutgoingEditIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/store-admin/people/'
     | '/store-admin/people/$farmerStorageLinkId/'
     | '/store-admin/incoming/edit/$id/'
+    | '/store-admin/outgoing/edit/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/store-admin/people'
     | '/store-admin/people/$farmerStorageLinkId'
     | '/store-admin/incoming/edit/$id'
+    | '/store-admin/outgoing/edit/$id'
   id:
     | '__root__'
     | '/'
@@ -151,6 +163,7 @@ export interface FileRouteTypes {
     | '/store-admin/_authenticated/people/'
     | '/store-admin/_authenticated/people/$farmerStorageLinkId/'
     | '/store-admin/_authenticated/incoming/edit/$id/'
+    | '/store-admin/_authenticated/outgoing/edit/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRouteImport
       parentRoute: typeof StoreAdminAuthenticatedRoute
     }
+    '/store-admin/_authenticated/outgoing/edit/$id/': {
+      id: '/store-admin/_authenticated/outgoing/edit/$id/'
+      path: '/outgoing/edit/$id'
+      fullPath: '/store-admin/outgoing/edit/$id/'
+      preLoaderRoute: typeof StoreAdminAuthenticatedOutgoingEditIdIndexRouteImport
+      parentRoute: typeof StoreAdminAuthenticatedRoute
+    }
     '/store-admin/_authenticated/incoming/edit/$id/': {
       id: '/store-admin/_authenticated/incoming/edit/$id/'
       path: '/incoming/edit/$id'
@@ -242,6 +262,7 @@ interface StoreAdminAuthenticatedRouteChildren {
   StoreAdminAuthenticatedPeopleIndexRoute: typeof StoreAdminAuthenticatedPeopleIndexRoute
   StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute: typeof StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute
   StoreAdminAuthenticatedIncomingEditIdIndexRoute: typeof StoreAdminAuthenticatedIncomingEditIdIndexRoute
+  StoreAdminAuthenticatedOutgoingEditIdIndexRoute: typeof StoreAdminAuthenticatedOutgoingEditIdIndexRoute
 }
 
 const StoreAdminAuthenticatedRouteChildren: StoreAdminAuthenticatedRouteChildren =
@@ -258,6 +279,8 @@ const StoreAdminAuthenticatedRouteChildren: StoreAdminAuthenticatedRouteChildren
       StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute,
     StoreAdminAuthenticatedIncomingEditIdIndexRoute:
       StoreAdminAuthenticatedIncomingEditIdIndexRoute,
+    StoreAdminAuthenticatedOutgoingEditIdIndexRoute:
+      StoreAdminAuthenticatedOutgoingEditIdIndexRoute,
   }
 
 const StoreAdminAuthenticatedRouteWithChildren =

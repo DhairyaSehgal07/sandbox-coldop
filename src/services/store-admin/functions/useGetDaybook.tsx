@@ -24,6 +24,24 @@ export interface DaybookOrderDetail {
   size: string;
   quantityAvailable: number;
   quantityIssued: number;
+  /** Incoming gate pass number from which bags were issued (when present in API response). API may send as incomingGatePassNo or gatePassNumber. */
+  incomingGatePassNo?: number;
+  gatePassNumber?: number;
+}
+
+/** Bag size within an incoming gate pass snapshot (outgoing voucher only). */
+export interface DaybookIncomingGatePassSnapshotBagSize {
+  location: DaybookBagSizeLocation;
+  name: string;
+  currentQuantity: number;
+  initialQuantity: number;
+}
+
+/** Snapshot of an incoming gate pass linked to an outgoing (DELIVERY) voucher. */
+export interface DaybookIncomingGatePassSnapshot {
+  _id: string;
+  gatePassNo: number;
+  bagSizes: DaybookIncomingGatePassSnapshotBagSize[];
 }
 
 export interface DaybookFarmerStorageLink {
@@ -51,6 +69,8 @@ export interface DaybookEntry {
   bagSizes?: DaybookBagSize[];
   /** Present for DELIVERY */
   orderDetails?: DaybookOrderDetail[];
+  /** Present for DELIVERY: snapshots of incoming gate passes from which bags were issued. */
+  incomingGatePassSnapshots?: DaybookIncomingGatePassSnapshot[];
   /** Present for DELIVERY */
   from?: string;
   /** Present for DELIVERY */

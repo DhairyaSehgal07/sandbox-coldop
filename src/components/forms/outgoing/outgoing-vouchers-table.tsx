@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { IncomingGatePassCell } from '@/components/forms/outgoing/incoming-gate-pass-cell';
 import {
   allocationKey,
-  getBagDetailForSize,
+  getBagDetailsForSize,
   type IncomingGatePassDisplayGroup,
 } from '@/components/forms/outgoing/outgoing-form-utils';
 
@@ -21,14 +21,19 @@ export interface OutgoingVouchersTableProps {
   visibleSizes: string[];
   selectedOrders: Set<string>;
   onOrderToggle: (passId: string) => void;
-  /** Cell key: allocationKey(passId, sizeName) -> quantity to remove */
+  /** Cell key: allocationKey(passId, sizeName, bagIndex) -> quantity to remove */
   cellRemovedQuantities: Record<string, number>;
   onCellQuantityChange: (
     passId: string,
     sizeName: string,
-    quantity: number
+    quantity: number,
+    bagIndex?: number
   ) => void;
-  onCellQuickRemove: (passId: string, sizeName: string) => void;
+  onCellQuickRemove: (
+    passId: string,
+    sizeName: string,
+    bagIndex?: number
+  ) => void;
   isLoadingPasses: boolean;
   hasGradingData: boolean;
   hasFilteredData: boolean;
@@ -52,11 +57,18 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
     displayGroups.reduce(
       (sum, group) =>
         sum +
-        group.passes.reduce(
-          (rowSum, pass) =>
-            rowSum + (cellRemovedQuantities[allocationKey(pass._id, size)] ?? 0),
-          0
-        ),
+        group.passes.reduce((rowSum, pass) => {
+          const details = getBagDetailsForSize(pass, size);
+          const cellSum = details.reduce(
+            (s, d) =>
+              s +
+              (cellRemovedQuantities[
+                allocationKey(pass._id, size, d.bagIndex)
+              ] ?? 0),
+            0
+          );
+          return rowSum + cellSum;
+        }, 0),
       0
     )
   );
@@ -122,33 +134,63 @@ export const OutgoingVouchersTable = memo(function OutgoingVouchersTable({
                           </div>
                         </TableCell>
                         {visibleSizes.map((size) => {
-                          const detail = getBagDetailForSize(pass, size);
-                          if (!detail) {
+                          const details = getBagDetailsForSize(pass, size);
+                          if (details.length === 0) {
                             return (
                               <TableCell key={size} className="py-1">
                                 <div className="bg-muted/30 border-border/40 h-[58px] w-[70px] rounded-md border" />
                               </TableCell>
                             );
                           }
-                          const cellKey = allocationKey(pass._id, size);
                           return (
-                            <TableCell key={size} className="py-1">
-                              <IncomingGatePassCell
-                                variety={pass.variety ?? ''}
-                                currentQuantity={detail.currentQuantity}
-                                initialQuantity={detail.initialQuantity}
-                                removedQuantity={
-                                  cellRemovedQuantities[cellKey] ?? 0
-                                }
-                                onQuantityChange={(q) =>
-                                  onCellQuantityChange(pass._id, size, q)
-                                }
-                                onQuickRemove={() =>
-                                  onCellQuickRemove(pass._id, size)
-                                }
-                                disabled={detail.currentQuantity <= 0}
-                                location={detail.location}
-                              />
+                            <TableCell
+                              key={size}
+                              className="py-1 align-top"
+                            >
+                              <div className="flex flex-col gap-1.5">
+                                {details.map((detail) => {
+                                  const cellKey = allocationKey(
+                                    pass._id,
+                                    size,
+                                    detail.bagIndex
+                                  );
+                                  return (
+                                    <IncomingGatePassCell
+                                      key={cellKey}
+                                      variety={pass.variety ?? ''}
+                                      currentQuantity={detail.currentQuantity}
+                                      initialQuantity={detail.initialQuantity}
+                                      removedQuantity={
+                                        cellRemovedQuantities[cellKey] ?? 0
+                                      }
+                                      onQuantityChange={(q) =>
+                                        onCellQuantityChange(
+                                          pass._id,
+                                          size,
+                                          q,
+                                          detail.bagIndex
+                                        )
+                                      }
+                                      onQuickRemove={() =>
+                                        onCellQuickRemove(
+                                          pass._id,
+                                          size,
+                                          detail.bagIndex
+                                        )
+                                      }
+                                      disabled={detail.currentQuantity <= 0}
+                                      location={detail.location}
+                                      locationLabel={
+                                        details.length > 1 && detail.location
+                                          ? [detail.location.chamber, detail.location.floor, detail.location.row]
+                                              .filter(Boolean)
+                                              .join(' ')
+                                          : undefined
+                                      }
+                                    />
+                                  );
+                                })}
+                              </div>
                             </TableCell>
                           );
                         })}

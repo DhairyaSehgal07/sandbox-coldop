@@ -35,9 +35,16 @@ export interface IncomingSummaryFormValues {
   variety: string;
   truckNumber?: string;
   sizeQuantities: Record<string, number>;
+  extraQuantityRows?: Array<{ id: string; size: string; quantity: number }>;
   locationBySize: Record<string, LocationEntry>;
   remarks?: string;
   manualGatePassNumber?: number;
+}
+
+export interface QuantityRow {
+  sizeName: string;
+  quantity: number;
+  location: LocationEntry | undefined;
 }
 
 export interface IncomingSummarySheetProps {
@@ -47,6 +54,8 @@ export interface IncomingSummarySheetProps {
   farmerDisplayName: string;
   variety: string;
   formValues: IncomingSummaryFormValues;
+  /** Ordered rows for the quantities table (fixed sizes + extra size rows) */
+  quantityRows: QuantityRow[];
   sizeOrder: string[];
   totalRent: number | null;
   isPending: boolean;
@@ -133,6 +142,7 @@ export const IncomingSummarySheet = memo(function IncomingSummarySheet({
   farmerDisplayName,
   variety,
   formValues,
+  quantityRows,
   sizeOrder,
   totalRent,
   isPending,
@@ -140,13 +150,9 @@ export const IncomingSummarySheet = memo(function IncomingSummarySheet({
   gatePassNo,
   onSubmit,
 }: IncomingSummarySheetProps) {
-  const totalBags = Object.values(formValues.sizeQuantities).reduce(
-    (sum, qty) => sum + (qty ?? 0),
+  const totalBags = quantityRows.reduce(
+    (sum, row) => sum + (row.quantity ?? 0),
     0
-  );
-
-  const rowsWithQuantity = sizeOrder.filter(
-    (size) => (formValues.sizeQuantities[size] ?? 0) > 0
   );
 
   return (
@@ -252,13 +258,13 @@ export const IncomingSummarySheet = memo(function IncomingSummarySheet({
                     <div className="font-custom text-muted-foreground border-border/80 border-b py-2.5 font-medium tracking-wide uppercase">
                       Location
                     </div>
-                    {rowsWithQuantity.length > 0 ? (
-                      rowsWithQuantity.map((size) => (
+                    {quantityRows.length > 0 ? (
+                      quantityRows.map((row, idx) => (
                         <RowCells
-                          key={size}
-                          size={size}
-                          quantity={formValues.sizeQuantities[size] ?? 0}
-                          location={formValues.locationBySize?.[size]}
+                          key={`${row.sizeName}-${idx}`}
+                          size={row.sizeName}
+                          quantity={row.quantity}
+                          location={row.location}
                         />
                       ))
                     ) : (

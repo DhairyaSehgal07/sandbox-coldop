@@ -3,6 +3,7 @@ import {
   type ReactNode,
   memo,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -38,14 +39,16 @@ import type { IncomingGatePassItem } from '@/services/incoming-gate-pass/useGetI
 import { OutgoingSummarySheet } from '@/components/forms/outgoing/outgoing-summary-sheet';
 import { OutgoingVouchersTable } from '@/components/forms/outgoing/outgoing-vouchers-table';
 import {
-  ALLOCATION_KEY_DELIMITER,
   allocationKey,
-  getBagDetailForSize,
+  buildInitialAllocationsFromEntry,
+  getBagDetailsForSize,
   getUniqueLocationValues,
   groupIncomingPassesByDate,
+  parseAllocationKey,
   passMatchesLocationFilters,
   type LocationFilters,
 } from '@/components/forms/outgoing/outgoing-form-utils';
+import { EditOutgoingAllocations } from '@/components/forms/outgoing/edit-outgoing-allocations';
 import { DatePicker } from '@/components/forms/date-picker';
 import { formatDate } from '@/lib/helpers';
 import {
@@ -58,8 +61,14 @@ import {
   useCreateOutgoingGatePass,
   type CreateOutgoingGatePassBody,
 } from '@/services/outgoing-gate-pass/useCreateOutgoingGatePass';
+import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 
 type FieldErrors = Array<{ message?: string } | undefined>;
+
+export interface OutgoingFormProps {
+  editEntry?: DaybookEntry;
+  editId?: string;
+}
 
 /** Minimal form API shape for variety field + subscribe. */
 interface OutgoingFormApi {
@@ -102,6 +111,27 @@ function getUniqueSizes(passes: IncomingGatePassItem[]): string[] {
   return [...names].sort();
 }
 
+/** Get location for display from a pass's bag at (sizeName, bagIndex). */
+function getLocationForAllocation(
+  pass: IncomingGatePassItem | undefined,
+  sizeName: string,
+  bagIndex: number
+): { chamber: string; floor: string; row: string } | undefined {
+  if (!pass?.bagSizes?.length) return undefined;
+  const bags = pass.bagSizes.filter(
+    (b) => (b?.name ?? '').trim() === sizeName.trim()
+  );
+  const bag = bags[bagIndex];
+  if (!bag?.location) return undefined;
+  const { chamber, floor, row } = bag.location;
+  if (!chamber && !floor && !row) return undefined;
+  return {
+    chamber: chamber ?? '',
+    floor: floor ?? '',
+    row: row ?? '',
+  };
+}
+
 /** Build API payload from form values and allocation map. Returns null if no allocations. */
 function buildOutgoingPayload(
   formValues: {
@@ -114,24 +144,38 @@ function buildOutgoingPayload(
     truckNumber?: string;
   },
   gatePassNo: number,
-  cellRemovedQuantities: Record<string, number>
+  cellRemovedQuantities: Record<string, number>,
+  incomingPasses: IncomingGatePassItem[] = []
 ): CreateOutgoingGatePassBody | null {
   const entries = Object.entries(cellRemovedQuantities).filter(
     ([, qty]) => qty != null && qty > 0
   );
   if (entries.length === 0) return null;
 
+  const passById = new Map(incomingPasses.map((p) => [p._id, p]));
+
   const byPass = new Map<
     string,
-    { size: string; quantityToAllocate: number }[]
+    {
+      size: string;
+      quantityToAllocate: number;
+      bagIndex: number;
+      location?: { chamber: string; floor: string; row: string };
+    }[]
   >();
   for (const [key, qty] of entries) {
-    const idx = key.indexOf(ALLOCATION_KEY_DELIMITER);
-    if (idx <= 0 || idx === key.length - 1) continue;
-    const passId = key.slice(0, idx);
-    const size = key.slice(idx + ALLOCATION_KEY_DELIMITER.length);
+    const parsed = parseAllocationKey(key);
+    if (!parsed) continue;
+    const { passId, sizeName, bagIndex } = parsed;
     if (!byPass.has(passId)) byPass.set(passId, []);
-    byPass.get(passId)!.push({ size, quantityToAllocate: qty });
+    const pass = passById.get(passId);
+    const location = getLocationForAllocation(pass, sizeName, bagIndex);
+    byPass.get(passId)!.push({
+      size: sizeName,
+      quantityToAllocate: qty,
+      bagIndex,
+      ...(location && { location }),
+    });
   }
 
   const incomingGatePasses = [...byPass.entries()].map(
@@ -243,20 +287,25 @@ function OutgoingVouchersSection({
   }, [onResetVariety, setCellRemovedQuantities]);
 
   const handleCellQuantityChange = useCallback(
-    (passId: string, sizeName: string, quantity: number) => {
+    (
+      passId: string,
+      sizeName: string,
+      quantity: number,
+      bagIndex: number = 0
+    ) => {
       setCellRemovedQuantities((prev) => ({
         ...prev,
-        [allocationKey(passId, sizeName)]: quantity,
+        [allocationKey(passId, sizeName, bagIndex)]: quantity,
       }));
     },
     [setCellRemovedQuantities]
   );
 
   const handleCellQuickRemove = useCallback(
-    (passId: string, sizeName: string) => {
+    (passId: string, sizeName: string, bagIndex: number = 0) => {
       setCellRemovedQuantities((prev) => {
         const next = { ...prev };
-        delete next[allocationKey(passId, sizeName)];
+        delete next[allocationKey(passId, sizeName, bagIndex)];
         return next;
       });
     },
@@ -285,9 +334,12 @@ function OutgoingVouchersSection({
           setCellRemovedQuantities((prev) => {
             const next = { ...prev };
             for (const size of visibleSizes) {
-              const detail = getBagDetailForSize(pass, size);
-              if (detail && detail.currentQuantity > 0) {
-                next[allocationKey(passId, size)] = detail.currentQuantity;
+              const details = getBagDetailsForSize(pass, size);
+              for (const detail of details) {
+                if (detail.currentQuantity > 0) {
+                  next[allocationKey(passId, size, detail.bagIndex)] =
+                    detail.currentQuantity;
+                }
               }
             }
             return next;
@@ -296,9 +348,9 @@ function OutgoingVouchersSection({
       } else {
         setCellRemovedQuantities((prev) => {
           const next = { ...prev };
-          const prefix = `${passId}${ALLOCATION_KEY_DELIMITER}`;
           for (const key of Object.keys(next)) {
-            if (key.startsWith(prefix)) delete next[key];
+            const parsed = parseAllocationKey(key);
+            if (parsed?.passId === passId) delete next[key];
           }
           return next;
         });
@@ -648,7 +700,23 @@ function VarietyFieldInner({
   );
 }
 
-export const OutgoingForm = memo(function OutgoingForm() {
+const defaultOutgoingFormValues = {
+  manualParchiNumber: '',
+  farmerStorageLinkId: '',
+  variety: '',
+  orderDate: formatDate(new Date()),
+  from: '',
+  to: '',
+  truckNumber: '',
+  remarks: '',
+};
+
+export const OutgoingForm = memo(function OutgoingForm({
+  editEntry,
+  editId,
+}: OutgoingFormProps = {}) {
+  const isEditMode = Boolean(editEntry);
+
   const {
     data: farmerLinks,
     isLoading: isLoadingFarmers,
@@ -657,11 +725,13 @@ export const OutgoingForm = memo(function OutgoingForm() {
 
   const { data: nextVoucherNumber, isLoading: isLoadingVoucher } =
     useGetReceiptVoucherNumber('outgoing');
-  const voucherNumberDisplay = isLoadingVoucher
-    ? '...'
-    : nextVoucherNumber != null
-      ? `#${nextVoucherNumber}`
-      : '—';
+  const voucherNumberDisplay = isEditMode
+    ? (editEntry?.gatePassNo != null ? `#${editEntry.gatePassNo}` : '—')
+    : isLoadingVoucher
+      ? '...'
+      : nextVoucherNumber != null
+        ? `#${nextVoucherNumber}`
+        : '—';
 
   const createOutgoing = useCreateOutgoingGatePass();
   const [cellRemovedQuantities, setCellRemovedQuantities] = useState<
@@ -669,6 +739,30 @@ export const OutgoingForm = memo(function OutgoingForm() {
   >({});
   const [pendingPayload, setPendingPayload] =
     useState<CreateOutgoingGatePassBody | null>(null);
+
+  useEffect(() => {
+    if (editEntry) {
+      setCellRemovedQuantities(buildInitialAllocationsFromEntry(editEntry));
+    }
+  }, [editEntry]);
+
+  const editDefaultValues = useMemo(() => {
+    if (!editEntry) return null;
+    const orderDate =
+      editEntry.date != null && editEntry.date !== ''
+        ? formatDate(new Date(editEntry.date))
+        : formatDate(new Date());
+    return {
+      manualParchiNumber: editEntry.manualParchiNumber ?? '',
+      farmerStorageLinkId: editEntry.farmerStorageLinkId?._id ?? '',
+      variety: editEntry.variety ?? '',
+      orderDate,
+      from: editEntry.from ?? '',
+      to: editEntry.to ?? '',
+      truckNumber: editEntry.truckNumber ?? '',
+      remarks: editEntry.remarks ?? '',
+    };
+  }, [editEntry]);
 
   const farmerOptions: Option<string>[] = useMemo(() => {
     if (!farmerLinks) return [];
@@ -709,20 +803,27 @@ export const OutgoingForm = memo(function OutgoingForm() {
   const openSheetRef = useRef(false);
 
   const form = useForm({
-    defaultValues: {
-      manualParchiNumber: '',
-      farmerStorageLinkId: '',
-      variety: '',
-      orderDate: formatDate(new Date()),
-      from: '',
-      to: '',
-      truckNumber: '',
-      remarks: '',
-    },
+    defaultValues: editDefaultValues ?? defaultOutgoingFormValues,
     validators: {
       onSubmit: formSchema as never,
     },
     onSubmit: async ({ value }) => {
+      if (isEditMode) {
+        const payload = {
+          ...(editId && { id: editId }),
+          farmerStorageLinkId: value.farmerStorageLinkId,
+          variety: value.variety,
+          orderDate: value.orderDate,
+          from: value.from?.trim() || undefined,
+          to: value.to?.trim() || undefined,
+          truckNumber: value.truckNumber?.trim() || undefined,
+          remarks: value.remarks?.trim() ?? '',
+          manualParchiNumber: value.manualParchiNumber?.trim() || undefined,
+        };
+        console.log('Outgoing edit payload:', payload);
+        return;
+      }
+
       if (openSheetRef.current) {
         openSheetRef.current = false;
         const gatePassNo = nextVoucherNumber ?? 1;
@@ -737,7 +838,8 @@ export const OutgoingForm = memo(function OutgoingForm() {
             remarks: value.remarks,
           },
           gatePassNo,
-          cellRemovedQuantities
+          cellRemovedQuantities,
+          incomingPasses
         );
         if (!payload) {
           toast.error('Please add at least one allocation', {
@@ -751,9 +853,19 @@ export const OutgoingForm = memo(function OutgoingForm() {
     },
   });
 
+  const farmerStorageLinkIdForPasses =
+    (form.state.values as { farmerStorageLinkId?: string }).farmerStorageLinkId ??
+    '';
+  const { data: incomingPasses = [] } =
+    useGetIncomingGatePassesOfSingleFarmer(farmerStorageLinkIdForPasses);
+
   const handleReview = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isEditMode) {
+      form.handleSubmit();
+      return;
+    }
     openSheetRef.current = true;
     form.handleSubmit();
   };
@@ -763,7 +875,7 @@ export const OutgoingForm = memo(function OutgoingForm() {
       {/* Header */}
       <div className="mb-8 space-y-4">
         <h1 className="font-custom text-foreground text-3xl font-bold sm:text-4xl">
-          Create Outgoing Order
+          {isEditMode ? 'Edit Outgoing Order' : 'Create Outgoing Order'}
         </h1>
 
         <div className="bg-primary/20 inline-block rounded-full px-4 py-1.5">
@@ -954,32 +1066,48 @@ export const OutgoingForm = memo(function OutgoingForm() {
             )}
           />
 
-          {/* Incoming gate pass vouchers for selected farmer */}
-          <form.Subscribe
-            selector={(state) => ({
-              farmerStorageLinkId: state.values.farmerStorageLinkId,
-              variety: state.values.variety,
-            })}
-          >
-            {({ farmerStorageLinkId, variety }) => (
-              <Field>
-                <FieldLabel className="font-custom mb-2 block text-base font-semibold">
-                  Incoming gate pass vouchers
-                </FieldLabel>
-                <OutgoingVouchersSection
-                  key={`${farmerStorageLinkId ?? ''}-${vouchersSectionKey}`}
-                  farmerStorageLinkId={farmerStorageLinkId ?? ''}
-                  varietyFilter={variety ?? ''}
-                  onResetVariety={() => form.setFieldValue('variety', '')}
-                  cellRemovedQuantities={cellRemovedQuantities}
-                  setCellRemovedQuantities={setCellRemovedQuantities}
-                />
-              </Field>
-            )}
-          </form.Subscribe>
+          {/* Edit mode: show issued quantities so user can update them */}
+          {isEditMode && editEntry && (
+            <Field>
+              <FieldLabel className="font-custom mb-2 block text-base font-semibold">
+                Allocated quantities
+              </FieldLabel>
+              <EditOutgoingAllocations
+                editEntry={editEntry}
+                cellRemovedQuantities={cellRemovedQuantities}
+                setCellRemovedQuantities={setCellRemovedQuantities}
+              />
+            </Field>
+          )}
+
+          {/* Incoming gate pass vouchers for selected farmer (create only) */}
+          {!isEditMode && (
+            <form.Subscribe
+              selector={(state) => ({
+                farmerStorageLinkId: state.values.farmerStorageLinkId,
+                variety: state.values.variety,
+              })}
+            >
+              {({ farmerStorageLinkId, variety }) => (
+                <Field>
+                  <FieldLabel className="font-custom mb-2 block text-base font-semibold">
+                    Incoming gate pass vouchers
+                  </FieldLabel>
+                  <OutgoingVouchersSection
+                    key={`${farmerStorageLinkId ?? ''}-${vouchersSectionKey}`}
+                    farmerStorageLinkId={farmerStorageLinkId ?? ''}
+                    varietyFilter={variety ?? ''}
+                    onResetVariety={() => form.setFieldValue('variety', '')}
+                    cellRemovedQuantities={cellRemovedQuantities}
+                    setCellRemovedQuantities={setCellRemovedQuantities}
+                  />
+                </Field>
+              )}
+            </form.Subscribe>
+          )}
         </FieldGroup>
 
-        {/* Review button */}
+        {/* Review / Save button */}
         <div className="flex flex-wrap items-center justify-end gap-4 pt-4">
           <Button
             type="button"
@@ -999,11 +1127,12 @@ export const OutgoingForm = memo(function OutgoingForm() {
             size="lg"
             className="font-custom px-8 font-bold"
           >
-            Review
+            {isEditMode ? 'Save' : 'Review'}
           </Button>
         </div>
       </form>
 
+      {!isEditMode && (
       <OutgoingSummarySheet
         open={summaryOpen}
         onOpenChange={setSummaryOpen}
@@ -1022,6 +1151,7 @@ export const OutgoingForm = memo(function OutgoingForm() {
           });
         }}
       />
+      )}
     </main>
   );
 });

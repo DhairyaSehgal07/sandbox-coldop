@@ -31,12 +31,18 @@ import { useCreateIncomingGatePass } from '@/services/incoming-gate-pass/useCrea
 import {
   IncomingSummarySheet,
   type IncomingSummaryFormValues,
+  type QuantityRow,
 } from '@/components/forms/incoming/incoming-summary-sheet';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
+import { Plus, Trash2 } from 'lucide-react';
 
 const DEFAULT_LOCATION = { chamber: '', floor: '', row: '' };
 
 type LocationEntry = { chamber: string; floor: string; row: string };
+
+export type ExtraQuantityRow = { id: string; size: string; quantity: number };
+
+const EXTRA_ROW_KEY_PREFIX = 'extra:';
 
 type FieldErrors = Array<{ message?: string } | undefined>;
 
@@ -125,6 +131,13 @@ export const IncomingForm = memo(function IncomingForm({
             .optional()
             .transform((val) => val?.toUpperCase()),
           sizeQuantities: z.record(z.string(), z.number().min(0)),
+          extraQuantityRows: z.array(
+            z.object({
+              id: z.string(),
+              size: z.string(),
+              quantity: z.number().min(0),
+            })
+          ),
           locationBySize: z.record(
             z.string(),
             z.object({
@@ -141,8 +154,22 @@ export const IncomingForm = memo(function IncomingForm({
             const withQty = Object.entries(data.sizeQuantities).filter(
               ([, qty]) => (qty ?? 0) > 0
             );
-            return withQty.every(([size]) => {
+            const fixedOk = withQty.every(([size]) => {
               const loc = data.locationBySize?.[size];
+              return (
+                loc &&
+                loc.chamber?.trim() !== '' &&
+                loc.floor?.trim() !== '' &&
+                loc.row?.trim() !== ''
+              );
+            });
+            if (!fixedOk) return false;
+            const extraWithQty = (data.extraQuantityRows ?? []).filter(
+              (row) => (row.quantity ?? 0) > 0
+            );
+            return extraWithQty.every((row) => {
+              const key = `${EXTRA_ROW_KEY_PREFIX}${row.id}`;
+              const loc = data.locationBySize?.[key];
               return (
                 loc &&
                 loc.chamber?.trim() !== '' &&
@@ -159,11 +186,15 @@ export const IncomingForm = memo(function IncomingForm({
         )
         .refine(
           (data) => {
-            const total = Object.values(data.sizeQuantities).reduce(
+            const fixedTotal = Object.values(data.sizeQuantities).reduce(
               (sum, qty) => sum + (qty ?? 0),
               0
             );
-            return total > 0;
+            const extraTotal = (data.extraQuantityRows ?? []).reduce(
+              (sum, row) => sum + (row.quantity ?? 0),
+              0
+            );
+            return fixedTotal + extraTotal > 0;
           },
           {
             message: 'Please enter at least one quantity.',
@@ -213,6 +244,7 @@ export const IncomingForm = memo(function IncomingForm({
       variety: editEntry.variety ?? '',
       truckNumber: editEntry.truckNumber ?? '',
       sizeQuantities,
+      extraQuantityRows: [],
       locationBySize,
       remarks: editEntry.remarks ?? '',
       manualGatePassNumber: undefined as number | undefined,
@@ -231,6 +263,7 @@ export const IncomingForm = memo(function IncomingForm({
       variety: '',
       truckNumber: '',
       sizeQuantities: defaultSizeQuantities,
+      extraQuantityRows: [] as ExtraQuantityRow[],
       locationBySize: {} as Record<string, LocationEntry>,
       remarks: '',
       manualGatePassNumber: undefined as number | undefined,
@@ -242,13 +275,18 @@ export const IncomingForm = memo(function IncomingForm({
       const selectedLink = farmerLinks?.find(
         (l) => l._id === value.farmerStorageLinkId
       );
-      const totalQty = quantitySizes.reduce(
+      const fixedQty = quantitySizes.reduce(
         (sum, size) => sum + (value.sizeQuantities[size] ?? 0),
         0
       );
+      const extraQty = (value.extraQuantityRows ?? []).reduce(
+        (sum, row) => sum + (row.quantity ?? 0),
+        0
+      );
+      const totalQty = fixedQty + extraQty;
       const amount = totalQty * (selectedLink?.costPerBag ?? 0);
 
-      const bagSizes = quantitySizes
+      const bagSizesFromFixed = quantitySizes
         .filter((size) => (value.sizeQuantities[size] ?? 0) > 0)
         .map((size) => {
           const qty = value.sizeQuantities[size] ?? 0;
@@ -264,6 +302,23 @@ export const IncomingForm = memo(function IncomingForm({
             },
           };
         });
+      const bagSizesFromExtra = (value.extraQuantityRows ?? [])
+        .filter((row) => (row.quantity ?? 0) > 0)
+        .map((row) => {
+          const key = `${EXTRA_ROW_KEY_PREFIX}${row.id}`;
+          const loc = value.locationBySize[key] ?? { ...DEFAULT_LOCATION };
+          return {
+            name: row.size,
+            initialQuantity: row.quantity,
+            currentQuantity: row.quantity,
+            location: {
+              chamber: loc.chamber.trim(),
+              floor: loc.floor.trim(),
+              row: loc.row.trim(),
+            },
+          };
+        });
+      const bagSizes = [...bagSizesFromFixed, ...bagSizesFromExtra];
 
       const payload = {
         ...(editId && { id: editId }),
@@ -313,10 +368,42 @@ export const IncomingForm = memo(function IncomingForm({
   const selectedLinkForSummary = farmerLinks?.find(
     (l) => l._id === formValues.farmerStorageLinkId
   );
-  const totalQtyForSummary = quantitySizes.reduce(
-    (sum, size) => sum + (formValues.sizeQuantities[size] ?? 0),
-    0
-  );
+  const totalQtyForSummary =
+    quantitySizes.reduce(
+      (sum, size) => sum + (formValues.sizeQuantities[size] ?? 0),
+      0
+    ) +
+    (formValues.extraQuantityRows ?? []).reduce(
+      (sum, row) => sum + (row.quantity ?? 0),
+      0
+    );
+  const quantityRowsForSummary: QuantityRow[] = useMemo(() => {
+    const fixed = quantitySizes
+      .filter(
+        (size) => (formValues.sizeQuantities[size] ?? 0) > 0
+      )
+      .map((size) => ({
+        sizeName: size,
+        quantity: formValues.sizeQuantities[size] ?? 0,
+        location: formValues.locationBySize?.[size],
+      }));
+    const extra = (formValues.extraQuantityRows ?? [])
+      .filter((row) => (row.quantity ?? 0) > 0)
+      .map((row) => ({
+        sizeName: row.size,
+        quantity: row.quantity ?? 0,
+        location:
+          formValues.locationBySize?.[
+            `${EXTRA_ROW_KEY_PREFIX}${row.id}`
+          ],
+      }));
+    return [...fixed, ...extra];
+  }, [
+    quantitySizes,
+    formValues.sizeQuantities,
+    formValues.extraQuantityRows,
+    formValues.locationBySize,
+  ]);
   const totalRentForSummary =
     selectedLinkForSummary != null
       ? totalQtyForSummary * (selectedLinkForSummary.costPerBag ?? 0)
@@ -518,20 +605,73 @@ export const IncomingForm = memo(function IncomingForm({
                     selector={(state) => ({
                       variety: state.values.variety,
                       farmerStorageLinkId: state.values.farmerStorageLinkId,
+                      extraQuantityRows: state.values.extraQuantityRows ?? [],
                     })}
                   >
-                    {({ variety, farmerStorageLinkId }) => {
+                    {({
+                      variety,
+                      farmerStorageLinkId,
+                      extraQuantityRows,
+                    }) => {
                       const sizeQuantities = field.state.value;
-                      const totalQty = quantitySizes.reduce(
+                      const fixedTotal = quantitySizes.reduce(
                         (sum, size) => sum + (sizeQuantities[size] ?? 0),
                         0
                       );
+                      const extraTotal = extraQuantityRows.reduce(
+                        (sum, row) => sum + (row.quantity ?? 0),
+                        0
+                      );
+                      const totalQty = fixedTotal + extraTotal;
                       const selectedLink = farmerLinks?.find(
                         (l) => l._id === farmerStorageLinkId
                       );
                       const costPerBag = selectedLink?.costPerBag ?? 0;
                       const totalRent = totalQty * costPerBag;
                       const quantitiesDisabled = !variety?.trim();
+
+                      const addExtraRow = () => {
+                        const next = [
+                          ...extraQuantityRows,
+                          {
+                            id: crypto.randomUUID(),
+                            size: quantitySizes[0] ?? '',
+                            quantity: 0,
+                          },
+                        ];
+                        form.setFieldValue(
+                          'extraQuantityRows' as never,
+                          next as never
+                        );
+                      };
+
+                      const updateExtraRow = (
+                        id: string,
+                        updates: {
+                          size?: string;
+                          quantity?: number;
+                        }
+                      ) => {
+                        const next = extraQuantityRows.map((row) =>
+                          row.id === id
+                            ? { ...row, ...updates }
+                            : row
+                        );
+                        form.setFieldValue(
+                          'extraQuantityRows' as never,
+                          next as never
+                        );
+                      };
+
+                      const removeExtraRow = (id: string) => {
+                        const next = extraQuantityRows.filter(
+                          (row) => row.id !== id
+                        );
+                        form.setFieldValue(
+                          'extraQuantityRows' as never,
+                          next as never
+                        );
+                      };
 
                       return (
                         <Card className="overflow-hidden">
@@ -542,7 +682,7 @@ export const IncomingForm = memo(function IncomingForm({
                             <CardDescription className="font-custom text-muted-foreground text-sm">
                               {quantitiesDisabled
                                 ? 'Please select a variety first to enter quantities.'
-                                : 'Enter quantity for each size.'}
+                                : 'Enter quantity for each size. Add extra size rows to track bags at multiple locations.'}
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-4">
@@ -585,6 +725,73 @@ export const IncomingForm = memo(function IncomingForm({
                                 </div>
                               );
                             })}
+                            {extraQuantityRows.map((row) => {
+                              const displayValue =
+                                row.quantity === 0 ? '' : String(row.quantity);
+                              return (
+                                <div
+                                  key={row.id}
+                                  className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                                >
+                                  <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-row">
+                                    <select
+                                      aria-label="Select size"
+                                      disabled={quantitiesDisabled}
+                                      value={row.size}
+                                      onChange={(e) =>
+                                        updateExtraRow(row.id, {
+                                          size: e.target.value,
+                                        })
+                                      }
+                                      className="border-input bg-background text-foreground font-custom focus-visible:ring-ring h-9 flex-1 rounded-md border px-3 py-1.5 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-32"
+                                    >
+                                      {quantitySizes.map((s) => (
+                                        <option key={s} value={s}>
+                                          {s}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-muted-foreground hover:text-destructive shrink-0"
+                                      onClick={() => removeExtraRow(row.id)}
+                                      aria-label={`Remove ${row.size || 'size'} row`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    placeholder="-"
+                                    disabled={quantitiesDisabled}
+                                    value={displayValue}
+                                    onChange={(e) => {
+                                      const raw = e.target.value;
+                                      const num =
+                                        raw === ''
+                                          ? 0
+                                          : Math.max(0, parseInt(raw, 10) || 0);
+                                      updateExtraRow(row.id, { quantity: num });
+                                    }}
+                                    className="w-full sm:w-28 sm:text-right [&]:[-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  />
+                                </div>
+                              );
+                            })}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addExtraRow}
+                              disabled={quantitiesDisabled}
+                              className="font-custom w-full sm:w-auto"
+                            >
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Size
+                            </Button>
                             <Separator className="my-4" />
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                               <span className="font-custom text-foreground text-base font-normal">
@@ -633,34 +840,51 @@ export const IncomingForm = memo(function IncomingForm({
                 name="locationBySize"
                 children={(field) => (
                   <form.Subscribe
-                    selector={(state) => state.values.sizeQuantities}
+                    selector={(state) => ({
+                      sizeQuantities: state.values.sizeQuantities,
+                      extraQuantityRows: state.values.extraQuantityRows ?? [],
+                    })}
                   >
-                    {(sizeQuantities) => {
-                      const sizesWithQty = quantitySizes.filter(
-                        (size) => (sizeQuantities[size] ?? 0) > 0
-                      );
+                    {({ sizeQuantities, extraQuantityRows }) => {
+                      const fixedWithQty = quantitySizes
+                        .filter(
+                          (size) => (sizeQuantities[size] ?? 0) > 0
+                        )
+                        .map((size) => ({
+                          key: size,
+                          sizeLabel: size,
+                          quantity: sizeQuantities[size] ?? 0,
+                        }));
+                      const extraWithQty = (extraQuantityRows ?? [])
+                        .filter((row) => (row.quantity ?? 0) > 0)
+                        .map((row) => ({
+                          key: `${EXTRA_ROW_KEY_PREFIX}${row.id}`,
+                          sizeLabel: row.size,
+                          quantity: row.quantity ?? 0,
+                        }));
+                      const locationRows = [...fixedWithQty, ...extraWithQty];
                       const locationBySize = field.state.value ?? {};
 
                       const clearAllLocations = () => {
                         const next: Record<string, LocationEntry> = {};
-                        for (const size of sizesWithQty) {
-                          next[size] = { ...DEFAULT_LOCATION };
+                        for (const row of locationRows) {
+                          next[row.key] = { ...DEFAULT_LOCATION };
                         }
                         field.handleChange(next);
                       };
 
-                      const getLocation = (size: string) =>
-                        locationBySize[size] ?? { ...DEFAULT_LOCATION };
+                      const getLocation = (key: string) =>
+                        locationBySize[key] ?? { ...DEFAULT_LOCATION };
 
                       const setLocation = (
-                        size: string,
-                        key: keyof LocationEntry,
+                        key: string,
+                        locKey: keyof LocationEntry,
                         value: string
                       ) => {
-                        const prev = getLocation(size);
+                        const prev = getLocation(key);
                         field.handleChange({
                           ...locationBySize,
-                          [size]: { ...prev, [key]: value },
+                          [key]: { ...prev, [locKey]: value },
                         });
                       };
 
@@ -672,6 +896,11 @@ export const IncomingForm = memo(function IncomingForm({
                                 <CardTitle className="font-custom text-foreground text-xl font-semibold">
                                   Enter Address (CH FL R)
                                 </CardTitle>
+                                <p className="font-custom text-muted-foreground text-sm">
+                                  Assign chamber, floor and row for each size
+                                  (including extra size rows) for detailed
+                                  tracking.
+                                </p>
                               </div>
                               <Button
                                 type="button"
@@ -685,9 +914,8 @@ export const IncomingForm = memo(function IncomingForm({
                             </div>
                           </CardHeader>
                           <CardContent className="space-y-6">
-                            {sizesWithQty.map((size, index) => {
-                              const qty = sizeQuantities[size] ?? 0;
-                              const loc = getLocation(size);
+                            {locationRows.map((row, index) => {
+                              const loc = getLocation(row.key);
                               const allFilled =
                                 Boolean(loc.chamber?.trim()) &&
                                 Boolean(loc.floor?.trim()) &&
@@ -705,11 +933,11 @@ export const IncomingForm = memo(function IncomingForm({
                                   ? 'Enter all fields'
                                   : '-';
                               return (
-                                <div key={size}>
+                                <div key={row.key}>
                                   {index > 0 && <Separator className="mb-6" />}
                                   <div className="space-y-4">
                                     <h3 className="font-custom text-foreground text-base font-semibold">
-                                      {size} – {qty} bags
+                                      {row.sizeLabel} – {row.quantity} bags
                                     </h3>
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                       <Field>
@@ -720,7 +948,7 @@ export const IncomingForm = memo(function IncomingForm({
                                           value={loc.chamber}
                                           onChange={(e) =>
                                             setLocation(
-                                              size,
+                                              row.key,
                                               'chamber',
                                               e.target.value
                                             )
@@ -737,7 +965,7 @@ export const IncomingForm = memo(function IncomingForm({
                                           value={loc.floor}
                                           onChange={(e) =>
                                             setLocation(
-                                              size,
+                                              row.key,
                                               'floor',
                                               e.target.value
                                             )
@@ -754,7 +982,7 @@ export const IncomingForm = memo(function IncomingForm({
                                           value={loc.row}
                                           onChange={(e) =>
                                             setLocation(
-                                              size,
+                                              row.key,
                                               'row',
                                               e.target.value
                                             )
@@ -858,6 +1086,7 @@ export const IncomingForm = memo(function IncomingForm({
           farmerDisplayName={farmerDisplayName}
           variety={formValues.variety}
           formValues={formValues}
+          quantityRows={quantityRowsForSummary}
           sizeOrder={quantitySizes}
           totalRent={totalRentForSummary}
           isPending={createGatePass.isPending}

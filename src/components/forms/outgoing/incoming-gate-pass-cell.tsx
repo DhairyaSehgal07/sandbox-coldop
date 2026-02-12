@@ -30,6 +30,8 @@ export interface IncomingGatePassCellProps {
   onQuickRemove: (e: React.MouseEvent) => void;
   disabled?: boolean;
   location?: IncomingGatePassCellLocation;
+  /** Short label for this location when multiple cells for same size (e.g. "A 1 R1") */
+  locationLabel?: string;
 }
 
 function getBorderByPercentage(
@@ -54,6 +56,7 @@ export const IncomingGatePassCell = memo(function IncomingGatePassCell({
   onQuickRemove,
   disabled,
   location,
+  locationLabel,
 }: IncomingGatePassCellProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -151,7 +154,7 @@ export const IncomingGatePassCell = memo(function IncomingGatePassCell({
 
         <ItemContent className="gap-0.5">
           <ItemTitle className="font-custom text-foreground/90 truncate text-[11px] leading-tight font-medium">
-            {variety}
+            {locationLabel ? `${variety} (${locationLabel})` : variety}
           </ItemTitle>
           {location && (location.chamber || location.floor || location.row) && (
             <p className="font-custom text-muted-foreground/70 flex items-center gap-1 truncate text-[10px] leading-tight">
