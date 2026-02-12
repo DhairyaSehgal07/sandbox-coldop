@@ -238,8 +238,8 @@ const MyFinancesPage = memo(function MyFinancesPage() {
             </Card>
           </TabsContent>
           <TabsContent value="ledgers" className="outline-none">
-            <Card className="border-border/50 rounded-2xl shadow-sm">
-              <CardContent className="pt-6">
+            <Card className="border-border/50 rounded-2xl py-4 shadow-sm">
+              <CardContent className="p-4">
                 <LedgerTab />
               </CardContent>
             </Card>

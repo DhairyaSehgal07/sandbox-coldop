@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-02-12
+
+### Added
+- My Finances / Ledgers: create-ledger dialog with form (name, type, subType, category, opening balance) and validation
+- My Finances / Ledgers: edit-ledger dialog with update API integration and form validation
+- My Finances / Ledgers: delete-ledger flow with confirmation AlertDialog (non-system ledgers only)
+- Ledgers service module under `services/accounting/ledgers/`: `useGetAllLedgers`, `useCreateLedger`, `useUpdateLedger`, `useDeleteLedger` with query invalidation
+- AlertDialog UI component (shadcn) for delete confirmation
+
+### Changed
+- My Finances: Ledgers tab now uses new ledgers module; table columns support edit/delete actions and type badges
+- Ledgers data and API: moved from single `useGetAllLedgers.tsx` to `ledgers/` folder with separate hooks for CRUD
+
+### Removed
+- `src/services/accounting/useGetAllLedgers.tsx` (replaced by `ledgers/useGetAllLedgers.tsx`)
+
 ## [0.11.0] - 2026-02-12
 
 ### Added
