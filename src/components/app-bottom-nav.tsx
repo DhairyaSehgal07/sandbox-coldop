@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { BookOpen, Users, BarChart3, Settings } from 'lucide-react';
+import { BookOpen, Users, BarChart3, Wallet, Settings } from 'lucide-react';
 import { useLocation, Link } from '@tanstack/react-router';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -28,6 +28,12 @@ const navigationItems: NavigationItem[] = [
     href: '/store-admin/analytics',
     icon: BarChart3,
     activePaths: ['/store-admin/analytics', '/store-admin/variety-breakdown'],
+  },
+  {
+    name: 'Finances',
+    href: '/store-admin/my-finances',
+    icon: Wallet,
+    activePaths: ['/store-admin/my-finances'],
   },
   {
     name: 'Settings',
@@ -63,7 +69,7 @@ const AppBottomNav = () => {
   }
 
   return (
-    <nav className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+    <nav className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white shadow-sm dark:border-border dark:bg-background">
       <div className="flex h-16 items-center justify-around">
         {navigationItemsWithState.map((item) => {
           const Icon = item.icon;

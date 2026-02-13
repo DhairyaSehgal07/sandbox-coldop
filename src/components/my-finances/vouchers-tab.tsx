@@ -55,6 +55,8 @@ const VoucherTab = memo(function VoucherTab() {
     narration: '',
   });
   const [voucherToDelete, setVoucherToDelete] = useState<Voucher | null>(null);
+  const [generalExpenseDialogOpen, setGeneralExpenseDialogOpen] =
+    useState(false);
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,24 +208,49 @@ const VoucherTab = memo(function VoucherTab() {
             className="font-custom focus-visible:ring-primary w-full pl-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           />
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="font-custom focus-visible:ring-primary h-10 w-full gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto">
-              <Plus className="h-4 w-4 shrink-0" />
-              Add New
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="font-custom focus-visible:ring-primary h-10 w-full gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto">
+                <Plus className="h-4 w-4 shrink-0" />
+                Add New
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="font-custom sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Voucher</DialogTitle>
+              </DialogHeader>
+              <VoucherCreateForm
+                form={form}
+                setForm={setForm}
+                onSubmit={handleCreateSubmit}
+                onCancel={() => setDialogOpen(false)}
+                isPending={createVoucher.isPending}
+              />
+            </DialogContent>
+          </Dialog>
+          <Button
+            type="button"
+            variant="secondary"
+            className="font-custom focus-visible:ring-primary h-10 w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:w-auto"
+            onClick={() => setGeneralExpenseDialogOpen(true)}
+          >
+            General Expense
+          </Button>
+        </div>
+        <Dialog
+          open={generalExpenseDialogOpen}
+          onOpenChange={setGeneralExpenseDialogOpen}
+        >
           <DialogContent className="font-custom sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New Voucher</DialogTitle>
+              <DialogTitle>General Expense</DialogTitle>
             </DialogHeader>
-            <VoucherCreateForm
-              form={form}
-              setForm={setForm}
-              onSubmit={handleCreateSubmit}
-              onCancel={() => setDialogOpen(false)}
-              isPending={createVoucher.isPending}
-            />
+            <p className="font-custom text-sm leading-relaxed text-gray-600">
+              Use this option to record general business expenses that are not
+              tied to a specific voucher or farmer. You can add details such as
+              category, amount, and narration.
+            </p>
           </DialogContent>
         </Dialog>
       </div>
