@@ -24,6 +24,7 @@ export const EditIncomingForm = memo(function EditIncomingForm({
     await updateGatePass.mutateAsync({
       id: editId,
       payload: {
+        date: payload.date,
         variety: payload.variety,
         remarks: payload.remarks,
         bagSizes: payload.bagSizes,

@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { DatePicker } from '@/components/forms/date-picker';
+import { payloadDateSchema } from '@/lib/helpers';
 import {
   SearchSelector,
   type Option,
@@ -139,7 +140,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
         .object({
           manualParchiNumber: z.string().trim().optional(),
           farmerStorageLinkId: z.string().min(1, 'Please select a farmer'),
-          date: z.string().min(1, 'Date is required'),
+          date: payloadDateSchema,
           variety: z.string().min(1, 'Please select a variety'),
           truckNumber: z
             .string()
@@ -352,7 +353,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
 
       const payload: IncomingFormSubmitPayload = {
         farmerStorageLinkId: value.farmerStorageLinkId,
-        date: value.date,
+        date: payloadDateSchema.parse(value.date),
         variety: value.variety,
         truckNumber: value.truckNumber?.trim() || undefined,
         bagSizes,

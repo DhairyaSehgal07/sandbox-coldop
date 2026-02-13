@@ -25,6 +25,7 @@ const bagSizeSchema = z.object({
 });
 
 export const updateIncomingGatePassBodySchema = z.object({
+  date: z.string().optional(), // ISO format e.g. 2026-02-12T00:00:00.000+00:00
   variety: z.string().min(1).optional(),
   remarks: z.string().max(500).optional(),
   bagSizes: z.array(bagSizeSchema).optional(),

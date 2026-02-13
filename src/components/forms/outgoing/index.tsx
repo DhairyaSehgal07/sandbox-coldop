@@ -50,7 +50,7 @@ import {
 } from '@/components/forms/outgoing/outgoing-form-utils';
 import { EditOutgoingAllocations } from '@/components/forms/outgoing/edit-outgoing-allocations';
 import { DatePicker } from '@/components/forms/date-picker';
-import { formatDate } from '@/lib/helpers';
+import { formatDate, payloadDateSchema } from '@/lib/helpers';
 import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -183,9 +183,7 @@ function buildOutgoingPayload(
   );
   if (incomingGatePasses.length === 0) return null;
 
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(formValues.orderDate)
-    ? formValues.orderDate
-    : (formValues.orderDate.split('T')[0] ?? formValues.orderDate);
+  const date = payloadDateSchema.parse(formValues.orderDate);
 
   return {
     farmerStorageLinkId: formValues.farmerStorageLinkId,
@@ -791,7 +789,7 @@ export const OutgoingForm = memo(function OutgoingForm({
         manualParchiNumber: z.string().trim().optional(),
         farmerStorageLinkId: z.string().min(1, 'Please select a farmer'),
         variety: z.string().min(1, 'Please select a variety'),
-        orderDate: z.string().min(1, 'Please select a date'),
+        orderDate: payloadDateSchema,
         from: z.string().trim().optional(),
         to: z.string().trim().optional(),
         truckNumber: z.string().trim().optional(),
@@ -815,7 +813,7 @@ export const OutgoingForm = memo(function OutgoingForm({
           ...(editId && { id: editId }),
           farmerStorageLinkId: value.farmerStorageLinkId,
           variety: value.variety,
-          orderDate: value.orderDate,
+          orderDate: payloadDateSchema.parse(value.orderDate),
           from: value.from?.trim() || undefined,
           to: value.to?.trim() || undefined,
           truckNumber: value.truckNumber?.trim() || undefined,
