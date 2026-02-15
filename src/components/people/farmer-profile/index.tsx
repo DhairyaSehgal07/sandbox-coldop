@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useRouterState } from '@tanstack/react-router';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,10 +30,12 @@ import {
   ArrowUpFromLine,
   ArrowDownToLine,
   Hash,
-  Package,
   Edit,
   Calendar,
   X,
+  Wallet,
+  BookOpen,
+  FileText,
 } from 'lucide-react';
 import type { FarmerStorageLink } from '@/types/farmer';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
@@ -44,6 +46,8 @@ import IncomingGatePassCard from '@/components/daybook/incoming-gate-pass-card';
 import OutgoingGatePassCard from '@/components/daybook/outgoing-gate-pass-card';
 import { useStore } from '@/stores/store';
 import { FarmerStockSummaryTable } from '@/components/people/farmer-profile/farmer-stock-summary-table';
+import EditFarmerDialog from '@/components/people/farmer-profile/edit-farmer-dialog';
+import type { UpdateFarmerStorageLinkResponseLink } from '@/types/farmer';
 
 /* ------------------------------------------------------------------ */
 /* Types – same as daybook screen */
@@ -95,11 +99,13 @@ function totalBagsOutgoing(entry: DaybookEntry): number {
 /* ------------------------------------------------------------------ */
 
 const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
+  const navigate = useNavigate();
   const link = useRouterState({
     select: (state) =>
       (state.location.state as { link?: FarmerStorageLink } | undefined)?.link,
   });
 
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
@@ -249,19 +255,48 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-full"
+                  className="h-10 w-10 rounded-full focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   aria-label="Edit farmer"
+                  onClick={() => setEditDialogOpen(true)}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
               </div>
 
+              <EditFarmerDialog
+                open={editDialogOpen}
+                onOpenChange={setEditDialogOpen}
+                link={link}
+                onUpdated={(updatedLink) => {
+                  navigate({
+                    to: '/store-admin/people/$farmerStorageLinkId',
+                    params: { farmerStorageLinkId: link._id },
+                    state: { link: updatedLink } as Record<string, unknown>,
+                    replace: true,
+                  });
+                }}
+              />
+
               <div className="flex flex-wrap gap-3">
                 <Button
-                  variant="default"
-                  className="font-custom gap-2 rounded-lg"
+                  variant="outline"
+                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
-                  <Package className="h-4 w-4" />
+                  <Wallet className="text-primary h-4 w-4" />
+                  Finances
+                </Button>
+                <Button
+                  variant="outline"
+                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  <BookOpen className="text-primary h-4 w-4" />
+                  View Financial Ledger
+                </Button>
+                <Button
+                  variant="outline"
+                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  <FileText className="text-primary h-4 w-4" />
                   View Stock Ledger
                 </Button>
               </div>
