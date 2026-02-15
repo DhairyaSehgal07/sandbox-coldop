@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-02-16
+
+### Added
+- Farmer profile (People): finance action forms and dialogs for Sell Potato, Receive Payment, Add Payment, Add Discount, and Add Charge (create vouchers from Finances actions menu)
+- Form components under `forms/people/`: `SellPotatoForm`, `ReceivePaymentForm`, `AddPaymentForm`, `AddDiscountForm`, `AddChargeForm` with ledger selection, date, amount, narration, and create-voucher integration
+
+### Changed
+- Farmer profile: Finances actions dialog now opens dialogs for all finance actions (buy potato, sell potato, receive payment, add payment, add discount, add charge)
+
 ## [0.16.0] - 2026-02-15
 
 ### Added

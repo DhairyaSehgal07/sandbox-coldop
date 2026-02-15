@@ -56,6 +56,11 @@ import {
 import EditFarmerDialog from '@/components/people/farmer-profile/edit-farmer-dialog';
 import FinancesActionsDialog from '@/components/people/farmer-profile/finances-actions-dialog';
 import BuyPotatoForm from '@/components/forms/people/buy-potato';
+import SellPotatoForm from '@/components/forms/people/sell-potato';
+import ReceivePaymentForm from '@/components/forms/people/receive-payment';
+import AddPaymentForm from '@/components/forms/people/add-payment';
+import AddDiscountForm from '@/components/forms/people/add-discount';
+import AddChargeForm from '@/components/forms/people/add-charge';
 import type { UpdateFarmerStorageLinkResponseLink } from '@/types/farmer';
 
 /* ------------------------------------------------------------------ */
@@ -117,6 +122,12 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [financesDialogOpen, setFinancesDialogOpen] = useState(false);
   const [buyPotatoDialogOpen, setBuyPotatoDialogOpen] = useState(false);
+  const [sellPotatoDialogOpen, setSellPotatoDialogOpen] = useState(false);
+  const [receivePaymentDialogOpen, setReceivePaymentDialogOpen] =
+    useState(false);
+  const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
+  const [addDiscountDialogOpen, setAddDiscountDialogOpen] = useState(false);
+  const [addChargeDialogOpen, setAddChargeDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
@@ -302,6 +313,12 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   onOpenChange={setFinancesDialogOpen}
                   onAction={(action) => {
                     if (action === 'buy-potato') setBuyPotatoDialogOpen(true);
+                    if (action === 'sell-potato') setSellPotatoDialogOpen(true);
+                    if (action === 'receive-payment')
+                      setReceivePaymentDialogOpen(true);
+                    if (action === 'add-payment') setAddPaymentDialogOpen(true);
+                    if (action === 'add-discount') setAddDiscountDialogOpen(true);
+                    if (action === 'add-charge') setAddChargeDialogOpen(true);
                   }}
                 />
                 <Dialog
@@ -324,6 +341,123 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                         farmerName={link.farmerId.name}
                         onSuccess={() => setBuyPotatoDialogOpen(false)}
                         onCancel={() => setBuyPotatoDialogOpen(false)}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Dialog
+                  open={sellPotatoDialogOpen}
+                  onOpenChange={setSellPotatoDialogOpen}
+                >
+                  <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
+                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                        Sell Potato
+                      </DialogTitle>
+                      <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
+                        Create a voucher for potato sale to{' '}
+                        {link.farmerId.name}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                      <SellPotatoForm
+                        defaultFarmerStorageLinkId={link._id}
+                        farmerName={link.farmerId.name}
+                        onSuccess={() => setSellPotatoDialogOpen(false)}
+                        onCancel={() => setSellPotatoDialogOpen(false)}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Dialog
+                  open={receivePaymentDialogOpen}
+                  onOpenChange={setReceivePaymentDialogOpen}
+                >
+                  <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
+                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                        Receive Payment
+                      </DialogTitle>
+                      <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
+                        Record payment received from {link.farmerId.name}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                      <ReceivePaymentForm
+                        defaultFarmerStorageLinkId={link._id}
+                        farmerName={link.farmerId.name}
+                        onSuccess={() => setReceivePaymentDialogOpen(false)}
+                        onCancel={() => setReceivePaymentDialogOpen(false)}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Dialog
+                  open={addPaymentDialogOpen}
+                  onOpenChange={setAddPaymentDialogOpen}
+                >
+                  <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
+                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                        Add Payment
+                      </DialogTitle>
+                      <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
+                        Record payment made to {link.farmerId.name}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                      <AddPaymentForm
+                        defaultFarmerStorageLinkId={link._id}
+                        farmerName={link.farmerId.name}
+                        onSuccess={() => setAddPaymentDialogOpen(false)}
+                        onCancel={() => setAddPaymentDialogOpen(false)}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Dialog
+                  open={addDiscountDialogOpen}
+                  onOpenChange={setAddDiscountDialogOpen}
+                >
+                  <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
+                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                        Add Discount
+                      </DialogTitle>
+                      <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
+                        Create a discount voucher for {link.farmerId.name}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                      <AddDiscountForm
+                        defaultFarmerStorageLinkId={link._id}
+                        farmerName={link.farmerId.name}
+                        onSuccess={() => setAddDiscountDialogOpen(false)}
+                        onCancel={() => setAddDiscountDialogOpen(false)}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Dialog
+                  open={addChargeDialogOpen}
+                  onOpenChange={setAddChargeDialogOpen}
+                >
+                  <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
+                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                        Add Charge
+                      </DialogTitle>
+                      <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
+                        Create a charge (other income) voucher for{' '}
+                        {link.farmerId.name}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                      <AddChargeForm
+                        defaultFarmerStorageLinkId={link._id}
+                        farmerName={link.farmerId.name}
+                        onSuccess={() => setAddChargeDialogOpen(false)}
+                        onCancel={() => setAddChargeDialogOpen(false)}
                       />
                     </div>
                   </DialogContent>
