@@ -19,6 +19,7 @@ import { Route as StoreAdminAuthenticatedMyFinancesIndexRouteImport } from './ro
 import { Route as StoreAdminAuthenticatedIncomingIndexRouteImport } from './routes/store-admin/_authenticated/incoming/index'
 import { Route as StoreAdminAuthenticatedEditHistoryIndexRouteImport } from './routes/store-admin/_authenticated/edit-history/index'
 import { Route as StoreAdminAuthenticatedDaybookIndexRouteImport } from './routes/store-admin/_authenticated/daybook/index'
+import { Route as StoreAdminAuthenticatedAnalyticsIndexRouteImport } from './routes/store-admin/_authenticated/analytics/index'
 import { Route as StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRouteImport } from './routes/store-admin/_authenticated/people/$farmerStorageLinkId/index'
 import { Route as StoreAdminAuthenticatedOutgoingEditIdIndexRouteImport } from './routes/store-admin/_authenticated/outgoing/edit/$id/index'
 import { Route as StoreAdminAuthenticatedIncomingEditIdIndexRouteImport } from './routes/store-admin/_authenticated/incoming/edit/$id/index'
@@ -79,6 +80,12 @@ const StoreAdminAuthenticatedDaybookIndexRoute =
     path: '/daybook/',
     getParentRoute: () => StoreAdminAuthenticatedRoute,
   } as any)
+const StoreAdminAuthenticatedAnalyticsIndexRoute =
+  StoreAdminAuthenticatedAnalyticsIndexRouteImport.update({
+    id: '/analytics/',
+    path: '/analytics/',
+    getParentRoute: () => StoreAdminAuthenticatedRoute,
+  } as any)
 const StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRoute =
   StoreAdminAuthenticatedPeopleFarmerStorageLinkIdIndexRouteImport.update({
     id: '/people/$farmerStorageLinkId/',
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/store-admin': typeof StoreAdminAuthenticatedRouteWithChildren
   '/zustand/': typeof ZustandIndexRoute
   '/store-admin/login/': typeof StoreAdminLoginIndexRoute
+  '/store-admin/analytics/': typeof StoreAdminAuthenticatedAnalyticsIndexRoute
   '/store-admin/daybook/': typeof StoreAdminAuthenticatedDaybookIndexRoute
   '/store-admin/edit-history/': typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   '/store-admin/incoming/': typeof StoreAdminAuthenticatedIncomingIndexRoute
@@ -118,6 +126,7 @@ export interface FileRoutesByTo {
   '/store-admin': typeof StoreAdminAuthenticatedRouteWithChildren
   '/zustand': typeof ZustandIndexRoute
   '/store-admin/login': typeof StoreAdminLoginIndexRoute
+  '/store-admin/analytics': typeof StoreAdminAuthenticatedAnalyticsIndexRoute
   '/store-admin/daybook': typeof StoreAdminAuthenticatedDaybookIndexRoute
   '/store-admin/edit-history': typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   '/store-admin/incoming': typeof StoreAdminAuthenticatedIncomingIndexRoute
@@ -134,6 +143,7 @@ export interface FileRoutesById {
   '/store-admin/_authenticated': typeof StoreAdminAuthenticatedRouteWithChildren
   '/zustand/': typeof ZustandIndexRoute
   '/store-admin/login/': typeof StoreAdminLoginIndexRoute
+  '/store-admin/_authenticated/analytics/': typeof StoreAdminAuthenticatedAnalyticsIndexRoute
   '/store-admin/_authenticated/daybook/': typeof StoreAdminAuthenticatedDaybookIndexRoute
   '/store-admin/_authenticated/edit-history/': typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   '/store-admin/_authenticated/incoming/': typeof StoreAdminAuthenticatedIncomingIndexRoute
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/store-admin'
     | '/zustand/'
     | '/store-admin/login/'
+    | '/store-admin/analytics/'
     | '/store-admin/daybook/'
     | '/store-admin/edit-history/'
     | '/store-admin/incoming/'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/store-admin'
     | '/zustand'
     | '/store-admin/login'
+    | '/store-admin/analytics'
     | '/store-admin/daybook'
     | '/store-admin/edit-history'
     | '/store-admin/incoming'
@@ -181,6 +193,7 @@ export interface FileRouteTypes {
     | '/store-admin/_authenticated'
     | '/zustand/'
     | '/store-admin/login/'
+    | '/store-admin/_authenticated/analytics/'
     | '/store-admin/_authenticated/daybook/'
     | '/store-admin/_authenticated/edit-history/'
     | '/store-admin/_authenticated/incoming/'
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreAdminAuthenticatedDaybookIndexRouteImport
       parentRoute: typeof StoreAdminAuthenticatedRoute
     }
+    '/store-admin/_authenticated/analytics/': {
+      id: '/store-admin/_authenticated/analytics/'
+      path: '/analytics'
+      fullPath: '/store-admin/analytics/'
+      preLoaderRoute: typeof StoreAdminAuthenticatedAnalyticsIndexRouteImport
+      parentRoute: typeof StoreAdminAuthenticatedRoute
+    }
     '/store-admin/_authenticated/people/$farmerStorageLinkId/': {
       id: '/store-admin/_authenticated/people/$farmerStorageLinkId/'
       path: '/people/$farmerStorageLinkId'
@@ -296,6 +316,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface StoreAdminAuthenticatedRouteChildren {
+  StoreAdminAuthenticatedAnalyticsIndexRoute: typeof StoreAdminAuthenticatedAnalyticsIndexRoute
   StoreAdminAuthenticatedDaybookIndexRoute: typeof StoreAdminAuthenticatedDaybookIndexRoute
   StoreAdminAuthenticatedEditHistoryIndexRoute: typeof StoreAdminAuthenticatedEditHistoryIndexRoute
   StoreAdminAuthenticatedIncomingIndexRoute: typeof StoreAdminAuthenticatedIncomingIndexRoute
@@ -309,6 +330,8 @@ interface StoreAdminAuthenticatedRouteChildren {
 
 const StoreAdminAuthenticatedRouteChildren: StoreAdminAuthenticatedRouteChildren =
   {
+    StoreAdminAuthenticatedAnalyticsIndexRoute:
+      StoreAdminAuthenticatedAnalyticsIndexRoute,
     StoreAdminAuthenticatedDaybookIndexRoute:
       StoreAdminAuthenticatedDaybookIndexRoute,
     StoreAdminAuthenticatedEditHistoryIndexRoute:
