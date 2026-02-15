@@ -204,7 +204,7 @@ const DaybookPage = memo(function DaybookPage() {
               </ItemMedia>
               <ItemTitle className="font-custom text-sm font-semibold sm:text-base">
                 {data?.pagination != null
-                  ? `${data.pagination.totalItems} vouchers`
+                  ? `${data.pagination.totalItems} gate passes`
                   : 'Daybook'}
               </ItemTitle>
             </div>
@@ -242,7 +242,7 @@ const DaybookPage = memo(function DaybookPage() {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                placeholder="Search by receipt number"
+                placeholder="Search by gate pass no"
                 value={searchReceipt}
                 onChange={(e) => handleSearchReceiptChange(e.target.value)}
                 onKeyDown={(e) => {
@@ -252,7 +252,7 @@ const DaybookPage = memo(function DaybookPage() {
                   }
                 }}
                 className="font-custom focus-visible:ring-primary w-full pl-10 focus-visible:ring-2 focus-visible:ring-offset-2"
-                aria-label="Search by receipt number (numbers only)"
+                aria-label="Search by gate pass no (numbers only)"
               />
             </div>
             <Button
@@ -405,14 +405,14 @@ const DaybookPage = memo(function DaybookPage() {
                 </EmptyMedia>
                 <EmptyTitle>No orders yet</EmptyTitle>
                 <EmptyDescription>
-                  {emptyMessage ?? 'No vouchers to show.'}
+                  {emptyMessage ?? 'No gate passes to show.'}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
           )}
           {isSearchMode && searchResult != null && entries.length === 0 && (
             <p className="font-custom text-muted-foreground text-sm">
-              No vouchers found for this receipt number.
+              No gate passes found for this receipt number.
             </p>
           )}
           {((!isSearchMode && !isLoading && !isError) || isSearchMode) &&

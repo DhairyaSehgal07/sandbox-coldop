@@ -193,7 +193,7 @@ function buildOutgoingPayload(
     ...(formValues.from?.trim() && { from: formValues.from.trim() }),
     ...(formValues.to?.trim() && { to: formValues.to.trim() }),
     ...(formValues.truckNumber?.trim() && {
-      truckNumber: formValues.truckNumber.trim(),
+      truckNumber: formValues.truckNumber.trim().toUpperCase(),
     }),
     incomingGatePasses,
     remarks: formValues.remarks?.trim() ?? '',
@@ -360,7 +360,7 @@ function OutgoingVouchersSection({
   if (!farmerStorageLinkId) {
     return (
       <p className="font-custom text-muted-foreground text-sm">
-        Select a farmer to view their incoming gate pass vouchers.
+        Select a farmer to view their incoming gate passes.
       </p>
     );
   }
@@ -368,7 +368,7 @@ function OutgoingVouchersSection({
   if (isLoading) {
     return (
       <p className="font-custom text-muted-foreground text-sm">
-        Loading vouchers...
+        Loading gate passes...
       </p>
     );
   }
@@ -376,7 +376,7 @@ function OutgoingVouchersSection({
   if (error) {
     return (
       <p className="font-custom text-destructive text-sm">
-        Failed to load vouchers: {error.message}
+        Failed to load gate passes: {error.message}
       </p>
     );
   }
@@ -384,7 +384,7 @@ function OutgoingVouchersSection({
   if (!allPasses.length) {
     return (
       <p className="font-custom text-muted-foreground text-sm">
-        No incoming gate pass vouchers for this farmer.
+        No incoming gate passes for this farmer.
       </p>
     );
   }
@@ -407,7 +407,7 @@ function OutgoingVouchersSection({
         <div className="border-border/60 bg-muted/30 flex flex-wrap items-end gap-x-5 gap-y-4 rounded-xl border px-4 py-4 shadow-sm">
           <div className="flex flex-col gap-2">
             <span className="font-custom text-muted-foreground text-xs leading-none font-medium">
-              Sort by voucher
+              Sort by gate pass
             </span>
             <div className="flex h-10 items-center gap-1.5">
               <Button
@@ -685,7 +685,7 @@ function VarietyFieldInner({
               farmerStorageLinkId
                 ? data === undefined
                   ? 'Loading varieties...'
-                  : 'No varieties in incoming vouchers'
+                  : 'No varieties in incoming gate passes'
                 : 'Select a farmer first'
             }
           />
@@ -792,7 +792,11 @@ export const OutgoingForm = memo(function OutgoingForm({
         orderDate: payloadDateSchema,
         from: z.string().trim().optional(),
         to: z.string().trim().optional(),
-        truckNumber: z.string().trim().optional(),
+        truckNumber: z
+        .string()
+        .trim()
+        .optional()
+        .transform((val) => (val ? val.toUpperCase() : val)),
         remarks: z.string().max(500).default(''),
       }),
     []
@@ -816,7 +820,7 @@ export const OutgoingForm = memo(function OutgoingForm({
           orderDate: payloadDateSchema.parse(value.orderDate),
           from: value.from?.trim() || undefined,
           to: value.to?.trim() || undefined,
-          truckNumber: value.truckNumber?.trim() || undefined,
+          truckNumber: value.truckNumber?.trim().toUpperCase() || undefined,
           remarks: value.remarks?.trim() ?? '',
           manualParchiNumber: value.manualParchiNumber?.trim() || undefined,
         };
@@ -843,7 +847,7 @@ export const OutgoingForm = memo(function OutgoingForm({
         );
         if (!payload) {
           toast.error('Please add at least one allocation', {
-            description: 'Select quantities in the vouchers table.',
+            description: 'Select quantities in the gate passes table.',
           });
           return;
         }
@@ -876,12 +880,12 @@ export const OutgoingForm = memo(function OutgoingForm({
       {/* Header */}
       <div className="mb-8 space-y-4">
         <h1 className="font-custom text-foreground text-3xl font-bold sm:text-4xl">
-          {isEditMode ? 'Edit Outgoing Order' : 'Create Outgoing Order'}
+          {isEditMode ? 'Edit Outgoing Gate Pass' : 'Create Outgoing Gate Pass'}
         </h1>
 
         <div className="bg-primary/20 inline-block rounded-full px-4 py-1.5">
           <span className="font-custom text-primary text-sm font-medium">
-            VOUCHER NO: {voucherNumberDisplay}
+            GATE PASS NO: {voucherNumberDisplay}
           </span>
         </div>
       </div>
@@ -1041,7 +1045,9 @@ export const OutgoingForm = memo(function OutgoingForm({
                 <Input
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) =>
+                    field.handleChange(e.target.value.toUpperCase())
+                  }
                   placeholder="e.g. MH-12-AB-1234"
                   className="font-custom"
                 />
@@ -1081,7 +1087,7 @@ export const OutgoingForm = memo(function OutgoingForm({
             </Field>
           )}
 
-          {/* Incoming gate pass vouchers for selected farmer (create only) */}
+          {/* Incoming gate passes for selected farmer (create only) */}
           {!isEditMode && (
             <form.Subscribe
               selector={(state) => ({
@@ -1092,7 +1098,7 @@ export const OutgoingForm = memo(function OutgoingForm({
               {({ farmerStorageLinkId, variety }) => (
                 <Field>
                   <FieldLabel className="font-custom mb-2 block text-base font-semibold">
-                    Incoming gate pass vouchers
+                    Incoming gate passes
                   </FieldLabel>
                   <OutgoingVouchersSection
                     key={`${farmerStorageLinkId ?? ''}-${vouchersSectionKey}`}
