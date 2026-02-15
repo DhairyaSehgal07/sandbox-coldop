@@ -137,8 +137,17 @@ function formatAmount(value: number): string {
 /* Component */
 /* ------------------------------------------------------------------ */
 
-const LedgerViewTab = memo(function LedgerViewTab() {
+export interface LedgerViewTabProps {
+  initialFarmerStorageLinkId?: string;
+  initialFarmerName?: string;
+}
+
+const LedgerViewTab = memo(function LedgerViewTab({
+  initialFarmerStorageLinkId,
+  initialFarmerName,
+}: LedgerViewTabProps = {}) {
   const [selectedLedgerId, setSelectedLedgerId] = useState<string>('');
+  const [hasAppliedInitial, setHasAppliedInitial] = useState(false);
 
   const { data: ledgers = [], isLoading: ledgersLoading } = useGetAllLedgers();
   const { data: vouchers = [], isLoading: vouchersLoading } =
@@ -156,6 +165,34 @@ const LedgerViewTab = memo(function LedgerViewTab() {
     window.addEventListener('viewLedger', handleViewLedger);
     return () => window.removeEventListener('viewLedger', handleViewLedger);
   }, []);
+
+  useEffect(() => {
+    if (hasAppliedInitial || ledgers.length === 0) return;
+    if (!initialFarmerStorageLinkId && !initialFarmerName) return;
+
+    const match =
+      initialFarmerStorageLinkId
+        ? ledgers.find(
+            (l) => l.farmerStorageLinkId === initialFarmerStorageLinkId
+          )
+        : initialFarmerName
+          ? ledgers.find(
+              (l) =>
+                l.name === initialFarmerName ||
+                l.name.toLowerCase() === initialFarmerName.toLowerCase()
+            )
+          : null;
+
+    if (match) {
+      setSelectedLedgerId(match._id);
+    }
+    setHasAppliedInitial(true);
+  }, [
+    ledgers,
+    initialFarmerStorageLinkId,
+    initialFarmerName,
+    hasAppliedInitial,
+  ]);
 
   const ledgerOptions: Option<string>[] = useMemo(
     () =>

@@ -19,6 +19,8 @@ interface DatePickerProps {
   id?: string; // Optional id override
   /** When true, input and container take full width (e.g. for mobile stacks) */
   fullWidth?: boolean;
+  /** Optional class name for the label (e.g. to match form FieldLabel style) */
+  labelClassName?: string;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -27,6 +29,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   label = 'Select Order Date',
   id = 'date',
   fullWidth = false,
+  labelClassName,
 }) => {
   const [open, setOpen] = React.useState(false);
 
@@ -84,7 +87,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     <div className={cn('space-y-3', fullWidth && 'w-full')}>
       <Label
         htmlFor={id}
-        className="font-custom mb-2 block text-base font-semibold"
+        className={cn(
+          'font-custom block text-sm font-medium leading-snug',
+          labelClassName
+        )}
       >
         {label}
       </Label>

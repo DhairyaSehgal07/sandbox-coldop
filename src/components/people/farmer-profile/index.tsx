@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -46,7 +46,16 @@ import IncomingGatePassCard from '@/components/daybook/incoming-gate-pass-card';
 import OutgoingGatePassCard from '@/components/daybook/outgoing-gate-pass-card';
 import { useStore } from '@/stores/store';
 import { FarmerStockSummaryTable } from '@/components/people/farmer-profile/farmer-stock-summary-table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import EditFarmerDialog from '@/components/people/farmer-profile/edit-farmer-dialog';
+import FinancesActionsDialog from '@/components/people/farmer-profile/finances-actions-dialog';
+import BuyPotatoForm from '@/components/forms/people/buy-potato';
 import type { UpdateFarmerStorageLinkResponseLink } from '@/types/farmer';
 
 /* ------------------------------------------------------------------ */
@@ -106,6 +115,8 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
   });
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [financesDialogOpen, setFinancesDialogOpen] = useState(false);
+  const [buyPotatoDialogOpen, setBuyPotatoDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
@@ -280,21 +291,64 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="outline"
-                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground"
+                  onClick={() => setFinancesDialogOpen(true)}
                 >
                   <Wallet className="text-primary h-4 w-4" />
                   Finances
                 </Button>
+                <FinancesActionsDialog
+                  open={financesDialogOpen}
+                  onOpenChange={setFinancesDialogOpen}
+                  onAction={(action) => {
+                    if (action === 'buy-potato') setBuyPotatoDialogOpen(true);
+                  }}
+                />
+                <Dialog
+                  open={buyPotatoDialogOpen}
+                  onOpenChange={setBuyPotatoDialogOpen}
+                >
+                  <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
+                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                        Buy Potato
+                      </DialogTitle>
+                      <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
+                        Create a voucher for potato purchase from{' '}
+                        {link.farmerId.name}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                      <BuyPotatoForm
+                        defaultFarmerStorageLinkId={link._id}
+                        farmerName={link.farmerId.name}
+                        onSuccess={() => setBuyPotatoDialogOpen(false)}
+                        onCancel={() => setBuyPotatoDialogOpen(false)}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <Button
                   variant="outline"
-                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground"
+                  asChild
                 >
-                  <BookOpen className="text-primary h-4 w-4" />
-                  View Financial Ledger
+                  <Link
+                    to="/store-admin/my-finances"
+                    search={{
+                      tab: 'Ledger View',
+                      farmerStorageLinkId: link._id,
+                      farmerName: link.farmerId.name,
+                    }}
+                    className="gap-2"
+                  >
+                    <BookOpen className="text-primary h-4 w-4" />
+                    View Financial Ledger
+                  </Link>
                 </Button>
                 <Button
                   variant="outline"
-                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground"
                 >
                   <FileText className="text-primary h-4 w-4" />
                   View Stock Ledger

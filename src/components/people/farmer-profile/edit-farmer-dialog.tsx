@@ -119,7 +119,7 @@ const EditFarmerDialog = memo(function EditFarmerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="font-custom sm:max-w-[425px]">
+      <DialogContent className="font-custom max-h-[85dvh] overflow-y-auto p-4 sm:max-w-[425px] sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Edit Farmer</DialogTitle>
@@ -129,7 +129,7 @@ const EditFarmerDialog = memo(function EditFarmerDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <FieldGroup className="mt-6 grid gap-4">
+          <FieldGroup className="mt-4 grid gap-3 sm:mt-6 sm:gap-4">
             <Field data-invalid={!!errors.name}>
               <FieldLabel htmlFor="edit-farmer-name">Name</FieldLabel>
               <Input
@@ -250,16 +250,20 @@ const EditFarmerDialog = memo(function EditFarmerDialog({
             </Field>
           </FieldGroup>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-4 flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:justify-end">
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="font-custom">
+              <Button
+                type="button"
+                variant="outline"
+                className="font-custom w-full sm:w-auto"
+              >
                 Cancel
               </Button>
             </DialogClose>
             <Button
               type="submit"
               disabled={isPending}
-              className="font-custom"
+              className="font-custom w-full sm:w-auto"
             >
               {isPending ? 'Saving...' : 'Save changes'}
             </Button>

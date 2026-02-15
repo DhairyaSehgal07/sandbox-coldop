@@ -204,7 +204,7 @@ export const AddFarmerModal = memo(function AddFarmerModal({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="font-custom sm:max-w-[425px]">
+      <DialogContent className="font-custom max-h-[85dvh] overflow-y-auto p-4 sm:max-w-[425px] sm:p-6">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -219,7 +219,7 @@ export const AddFarmerModal = memo(function AddFarmerModal({
             </DialogDescription>
           </DialogHeader>
 
-          <FieldGroup className="mt-6 grid gap-4">
+          <FieldGroup className="mt-4 grid gap-3 sm:mt-6 sm:gap-4">
             {/* ---------------- ACCOUNT NUMBER ---------------- */}
 
             <form.Field
@@ -261,7 +261,7 @@ export const AddFarmerModal = memo(function AddFarmerModal({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
                         <Input
                           id={field.name}
                           name={field.name}
@@ -271,13 +271,14 @@ export const AddFarmerModal = memo(function AddFarmerModal({
                           onChange={(e) => field.handleChange(e.target.value)}
                           placeholder={`Suggested: ${nextAccountNumber}`}
                           aria-invalid={isInvalid}
-                          className="flex-1"
+                          className="min-w-0 flex-1"
                         />
 
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
+                          className="shrink-0 sm:self-start"
                           onClick={() =>
                             form.setFieldValue(
                               'accountNumber',
@@ -479,14 +480,22 @@ export const AddFarmerModal = memo(function AddFarmerModal({
             />
           </FieldGroup>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-4 flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:justify-end">
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button
+                type="button"
+                variant="outline"
+                className="font-custom w-full sm:w-auto"
+              >
                 Cancel
               </Button>
             </DialogClose>
 
-            <Button type="submit" disabled={isPending}>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="font-custom w-full sm:w-auto"
+            >
               {isPending ? 'Adding...' : 'Add Farmer'}
             </Button>
           </DialogFooter>

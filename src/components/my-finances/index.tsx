@@ -1,4 +1,5 @@
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
+import { useSearch } from '@tanstack/react-router';
 
 import {
   Item,
@@ -101,7 +102,24 @@ function MyFinancesSkeleton() {
 /* Page component */
 /* ------------------------------------------------------------------ */
 
+const TAB_VALUE_LEDGER_VIEW = 'ledger-view';
+
 const MyFinancesPage = memo(function MyFinancesPage() {
+  const search = useSearch({ from: '/store-admin/_authenticated/my-finances/' });
+  const tabFromUrl = search.tab;
+  const farmerStorageLinkIdFromUrl = search.farmerStorageLinkId;
+  const farmerNameFromUrl = search.farmerName;
+
+  const activeTab = useMemo(() => {
+    if (
+      tabFromUrl === 'Ledger View' ||
+      tabFromUrl === TAB_VALUE_LEDGER_VIEW
+    ) {
+      return TAB_VALUE_LEDGER_VIEW;
+    }
+    return 'vouchers';
+  }, [tabFromUrl]);
+
   const [period, setPeriod] = useState<PeriodFilter>('this_month');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -207,8 +225,12 @@ const MyFinancesPage = memo(function MyFinancesPage() {
           </ItemFooter>
         </Item>
 
-        {/* Tabs: scrollable on mobile */}
-        <Tabs defaultValue="vouchers" className="w-full space-y-4">
+        {/* Tabs: scrollable on mobile; initial tab from URL when present */}
+        <Tabs
+          key={`${activeTab}-${farmerStorageLinkIdFromUrl ?? ''}`}
+          defaultValue={activeTab}
+          className="w-full space-y-4"
+        >
           <div className="-mx-1 overflow-x-auto overflow-y-hidden px-1">
             <TabsList className="font-custom bg-muted inline-flex h-auto w-full flex-nowrap items-center justify-start gap-1 rounded-2xl p-1 sm:w-max sm:min-w-full">
               <TabsTrigger
@@ -261,7 +283,10 @@ const MyFinancesPage = memo(function MyFinancesPage() {
             <LedgerTab />
           </TabsContent>
           <TabsContent value="ledger-view" className="outline-none">
-            <LedgerViewTab />
+            <LedgerViewTab
+              initialFarmerStorageLinkId={farmerStorageLinkIdFromUrl}
+              initialFarmerName={farmerNameFromUrl}
+            />
           </TabsContent>
           <TabsContent value="financial-statements" className="outline-none">
             <FinancialStatementsTab />
