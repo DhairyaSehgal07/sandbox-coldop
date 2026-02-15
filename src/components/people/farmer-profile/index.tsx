@@ -61,7 +61,6 @@ import ReceivePaymentForm from '@/components/forms/people/receive-payment';
 import AddPaymentForm from '@/components/forms/people/add-payment';
 import AddDiscountForm from '@/components/forms/people/add-discount';
 import AddChargeForm from '@/components/forms/people/add-charge';
-import type { UpdateFarmerStorageLinkResponseLink } from '@/types/farmer';
 
 /* ------------------------------------------------------------------ */
 /* Types – same as daybook screen */
