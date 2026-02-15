@@ -7,7 +7,6 @@ export interface SizeQuantity {
   size: string;
   initialQuantity: number;
   currentQuantity: number;
-  quantityRemoved?: number;
 }
 
 /** Variety-level stock summary */
@@ -23,7 +22,6 @@ export interface ChartDataPoint {
   size: string;
   initialQuantity: number;
   currentQuantity: number;
-  quantityRemoved: number;
 }
 
 /** Chart-ready data for Recharts */

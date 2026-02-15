@@ -8,8 +8,10 @@ import {
   ItemActions,
 } from '@/components/ui/item';
 import { Button } from '@/components/ui/button';
-import { BarChart3, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart3, Package, RefreshCw, Wheat, Ruler } from 'lucide-react';
 import { useGetStorageSummary } from '@/services/analytics/useGetStorageSummary';
+import { StorageSummaryTable } from '@/components/analytics/storage-summary-table';
 
 const AnalyticsPage = memo(function AnalyticsPage() {
   const { data, isLoading, error, refetch, isFetching } =
@@ -47,7 +49,7 @@ const AnalyticsPage = memo(function AnalyticsPage() {
           </ItemHeader>
         </Item>
 
-        {/* Content area – JSON stringified summary */}
+        {/* Content */}
         <div className="min-h-[200px] w-full">
           {isLoading ? (
             <p className="font-custom text-sm text-gray-600">
@@ -60,9 +62,85 @@ const AnalyticsPage = memo(function AnalyticsPage() {
                 : 'Failed to load analytics'}
             </p>
           ) : data ? (
-            <pre className="font-custom bg-secondary/50 overflow-auto rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
-              <code>{JSON.stringify(data, null, 2)}</code>
-            </pre>
+            <div className="space-y-6">
+              {/* Stats: Total inventory, Top variety, Top size */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card className="border-border rounded-xl shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
+                      Total inventory (initial)
+                    </CardTitle>
+                    <Package className="text-muted-foreground h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-custom text-2xl font-bold text-[#333] tabular-nums">
+                      {data.totalInventory.initial.toLocaleString('en-IN')}
+                    </p>
+                    <p className="font-custom text-muted-foreground text-xs">
+                      Bags received
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border rounded-xl shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
+                      Total inventory (current)
+                    </CardTitle>
+                    <Package className="text-primary h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-custom text-primary text-2xl font-bold tabular-nums">
+                      {data.totalInventory.current.toLocaleString('en-IN')}
+                    </p>
+                    <p className="font-custom text-muted-foreground text-xs">
+                      Bags in storage
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border rounded-xl shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
+                      Top variety
+                    </CardTitle>
+                    <Wheat className="text-muted-foreground h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-custom text-lg font-semibold text-[#333]">
+                      {data.topVariety?.variety ?? '—'}
+                    </p>
+                    <p className="font-custom text-muted-foreground text-xs tabular-nums">
+                      {data.topVariety != null
+                        ? `${data.topVariety.currentQuantity.toLocaleString('en-IN')} bags`
+                        : 'No data'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border rounded-xl shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
+                      Top bag size
+                    </CardTitle>
+                    <Ruler className="text-muted-foreground h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-custom text-lg font-semibold text-[#333]">
+                      {data.topSize?.size ?? '—'}
+                    </p>
+                    <p className="font-custom text-muted-foreground text-xs tabular-nums">
+                      {data.topSize != null
+                        ? `${data.topSize.currentQuantity.toLocaleString('en-IN')} bags`
+                        : 'No data'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Summary table */}
+              <StorageSummaryTable
+                stockSummary={data.stockSummary}
+                sizes={data.chartData.sizes}
+              />
+            </div>
           ) : null}
         </div>
       </div>
