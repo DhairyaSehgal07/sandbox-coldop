@@ -42,6 +42,8 @@ import { formatDateToISO } from '@/lib/helpers';
 import { DatePicker } from '@/components/forms/date-picker';
 import IncomingGatePassCard from '@/components/daybook/incoming-gate-pass-card';
 import OutgoingGatePassCard from '@/components/daybook/outgoing-gate-pass-card';
+import { useStore } from '@/stores/store';
+import { FarmerStockSummaryTable } from '@/components/people/farmer-profile/farmer-stock-summary-table';
 
 /* ------------------------------------------------------------------ */
 /* Types – same as daybook screen */
@@ -150,6 +152,12 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
     [gatePassesData?.outgoing]
   );
   const pagination = gatePassesData?.pagination;
+
+  const preferences = useStore((s) => s.preferences);
+  const sizes = useMemo(
+    () => preferences?.commodities?.[0]?.sizes ?? [],
+    [preferences?.commodities]
+  );
 
   const combinedEntries: DaybookEntry[] = useMemo(() => {
     const inc: DaybookEntry[] = incoming.map((e) => ({
@@ -463,6 +471,8 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
             </div>
           </ItemFooter>
         </Item>
+
+        <FarmerStockSummaryTable sizes={sizes} incomingEntries={incoming} />
 
         {/* Error state */}
         {isError && (

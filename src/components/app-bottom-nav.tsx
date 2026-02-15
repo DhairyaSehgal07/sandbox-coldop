@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { BookOpen, Users, BarChart3, Wallet, Settings } from 'lucide-react';
+import { BookOpen, Users, BarChart3, Wallet } from 'lucide-react';
 import { useLocation, Link } from '@tanstack/react-router';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -34,17 +34,6 @@ const navigationItems: NavigationItem[] = [
     href: '/store-admin/my-finances',
     icon: Wallet,
     activePaths: ['/store-admin/my-finances'],
-  },
-  {
-    name: 'Settings',
-    href: '/store-admin/settings',
-    icon: Settings,
-    activePaths: [
-      '/store-admin/settings',
-      '/store-admin/settings/rbac',
-      '/store-admin/settings/profile',
-      '/store-admin/settings/preferences',
-    ],
   },
 ];
 

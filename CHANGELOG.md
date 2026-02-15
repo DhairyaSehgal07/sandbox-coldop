@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-02-15
+
+### Added
+- Farmer profile: stock summary table aggregating stock by variety and size (initial, current, outgoing) from incoming gate passes
+- Farmer profile: stock breakdown dialog with tabs (current / initial / outgoing) showing per-size, per-location breakdown; opened by clicking table cells
+- `FarmerStockSummaryTable` and `FarmerStockBreakdownDialog` components under `people/farmer-profile/`
+
+### Removed
+- Settings link from app bottom nav and sidebar
+
 ## [0.15.0] - 2026-02-15
 
 ### Added
