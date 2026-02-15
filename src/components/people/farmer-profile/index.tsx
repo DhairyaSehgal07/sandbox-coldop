@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouterState } from '@tanstack/react-router';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -36,7 +37,7 @@ import {
 } from 'lucide-react';
 import type { FarmerStorageLink } from '@/types/farmer';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
-import { useGetFarmerOrders } from '@/services/store-admin/functions/useGetFarmerOrders';
+import { useGetFarmerGatePasses } from '@/services/store-admin/functions/useGetFarmerGatePasses';
 import { formatDateToISO } from '@/lib/helpers';
 import { DatePicker } from '@/components/forms/date-picker';
 import IncomingGatePassCard from '@/components/daybook/incoming-gate-pass-card';
@@ -103,29 +104,52 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const dateRange = useMemo(() => {
-    if (!dateFrom && !dateTo) return undefined;
+  const gatePassesParams = useMemo(() => {
+    const dateRange =
+      dateFrom || dateTo
+        ? {
+            from: dateFrom ? formatDateToISO(dateFrom).slice(0, 10) : undefined,
+            to: dateTo ? formatDateToISO(dateTo).slice(0, 10) : undefined,
+          }
+        : undefined;
     return {
-      from: dateFrom ? formatDateToISO(dateFrom).slice(0, 10) : undefined,
-      to: dateTo ? formatDateToISO(dateTo).slice(0, 10) : undefined,
+      dateRange,
+      type: orderFilter,
+      sortBy: sortOrder,
     };
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, orderFilter, sortOrder]);
 
   const {
-    data: ordersData,
+    data: gatePassesData,
     isLoading,
     isFetching,
+    isError,
+    error,
     refetch,
-  } = useGetFarmerOrders(farmerStorageLinkId, dateRange);
+  } = useGetFarmerGatePasses(farmerStorageLinkId, gatePassesParams);
+
+  useEffect(() => {
+    if (!isError || !error) return;
+    const err = error as Error & {
+      response?: { data?: { message?: string; error?: { message?: string } } };
+    };
+    const apiMessage =
+      err.response?.data?.message ?? err.response?.data?.error?.message;
+    const message =
+      apiMessage ||
+      (err instanceof Error ? err.message : 'Failed to load gate passes.');
+    toast.error(message);
+  }, [isError, error]);
 
   const incoming = useMemo(
-    () => ordersData?.incoming ?? [],
-    [ordersData?.incoming]
+    () => gatePassesData?.incoming ?? [],
+    [gatePassesData?.incoming]
   );
   const outgoing = useMemo(
-    () => ordersData?.outgoing ?? [],
-    [ordersData?.outgoing]
+    () => gatePassesData?.outgoing ?? [],
+    [gatePassesData?.outgoing]
   );
+  const pagination = gatePassesData?.pagination;
 
   const combinedEntries: DaybookEntry[] = useMemo(() => {
     const inc: DaybookEntry[] = incoming.map((e) => ({
@@ -142,25 +166,13 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
   const filteredAndSortedEntries = useMemo(() => {
     let list = combinedEntries;
 
-    if (orderFilter === 'incoming') {
-      list = list.filter((e) => e.type === 'RECEIPT');
-    } else if (orderFilter === 'outgoing') {
-      list = list.filter((e) => e.type === 'DELIVERY');
-    }
-
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const normalizedQuery = searchQuery.trim();
     if (normalizedQuery) {
       list = list.filter((entry) => {
-        const farmerName =
-          entry.farmerStorageLinkId?.farmerId?.name?.toLowerCase() ?? '';
-        const voucherNo = String(entry.gatePassNo ?? '');
-        const date = entry.date
-          ? new Date(entry.date).toLocaleDateString('en-IN')
-          : '';
+        const gatePassNoStr = String(entry.gatePassNo ?? '');
         return (
-          farmerName.includes(normalizedQuery) ||
-          voucherNo.includes(normalizedQuery) ||
-          date.includes(normalizedQuery)
+          gatePassNoStr === normalizedQuery ||
+          gatePassNoStr.includes(normalizedQuery)
         );
       });
     }
@@ -172,9 +184,10 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
     });
 
     return list;
-  }, [combinedEntries, searchQuery, sortOrder, orderFilter]);
+  }, [combinedEntries, searchQuery, sortOrder]);
 
   const totalCount = filteredAndSortedEntries.length;
+  const totalFromApi = pagination?.totalItems ?? totalCount;
 
   const aggregateStats = useMemo(() => {
     const totalIncomingBags = incoming.reduce(
@@ -257,7 +270,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                       Incoming
                     </p>
                     <p className="font-custom text-lg font-bold">
-                      {aggregateStats.incomingCount} vouchers
+                      {aggregateStats.incomingCount} gate passes
                     </p>
                     <p className="font-custom text-muted-foreground text-sm">
                       {aggregateStats.totalIncomingBags.toLocaleString('en-IN')}{' '}
@@ -274,7 +287,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                       Outgoing
                     </p>
                     <p className="font-custom text-lg font-bold">
-                      {aggregateStats.outgoingCount} vouchers
+                      {aggregateStats.outgoingCount} gate passes
                     </p>
                     <p className="font-custom text-muted-foreground text-sm">
                       {aggregateStats.totalOutgoingBags.toLocaleString('en-IN')}{' '}
@@ -295,7 +308,9 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                 <Receipt className="text-primary h-5 w-5" />
               </ItemMedia>
               <ItemTitle className="font-custom text-sm font-semibold sm:text-base">
-                {totalCount} {totalCount === 1 ? 'voucher' : 'vouchers'}
+                {totalCount === totalFromApi
+                  ? `${totalCount} ${totalCount === 1 ? 'gate pass' : 'gate passes'}`
+                  : `${totalCount} of ${totalFromApi} gate passes`}
               </ItemTitle>
             </div>
             <ItemActions>
@@ -326,7 +341,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
           <div className="relative w-full">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
-              placeholder="Search by voucher number, date..."
+              placeholder="Search by gate pass number"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="font-custom focus-visible:ring-primary w-full pl-10 focus-visible:ring-2 focus-visible:ring-offset-2"
@@ -449,8 +464,32 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
           </ItemFooter>
         </Item>
 
-        {/* List: vouchers */}
-        {isLoading ? (
+        {/* Error state */}
+        {isError && (
+          <Card className="border-destructive/50">
+            <CardContent className="py-6 text-center">
+              <p className="font-custom text-destructive font-medium">
+                Failed to load gate passes.
+              </p>
+              <p className="font-custom text-muted-foreground mt-1 text-sm">
+                {error instanceof Error
+                  ? error.message
+                  : 'Something went wrong.'}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                className="font-custom mt-4"
+              >
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* List: gate passes */}
+        {!isError && isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <Card
@@ -490,15 +529,15 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
               </Card>
             ))}
           </div>
-        ) : filteredAndSortedEntries.length === 0 ? (
+        ) : !isError && filteredAndSortedEntries.length === 0 ? (
           <Card>
             <CardContent className="py-8 pt-6 text-center">
               <p className="font-custom text-muted-foreground">
-                No vouchers yet.
+                No gate passes yet.
               </p>
             </CardContent>
           </Card>
-        ) : (
+        ) : !isError ? (
           <div className="w-full space-y-4">
             {filteredAndSortedEntries.map((entry, idx) =>
               entry.type === 'RECEIPT' ? (
@@ -514,7 +553,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
               )
             )}
           </div>
-        )}
+        ) : null}
       </div>
     </main>
   );
