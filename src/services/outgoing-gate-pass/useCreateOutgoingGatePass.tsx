@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -106,6 +107,8 @@ function getCreateOutgoingGatePassError(
  * Validates payload with Zod. On success/error shows toast via sonner.
  */
 export function useCreateOutgoingGatePass() {
+  const navigate = useNavigate();
+
   return useMutation<
     CreateOutgoingGatePassSuccessResponse,
     AxiosError<CreateOutgoingGatePassApiError>,
@@ -151,6 +154,7 @@ export function useCreateOutgoingGatePass() {
       void queryClient.invalidateQueries({
         queryKey: voucherNumberKeys.detail('outgoing'),
       });
+      navigate({ to: '/store-admin/daybook' });
     },
 
     onError: (error: AxiosError<CreateOutgoingGatePassApiError> | Error) => {

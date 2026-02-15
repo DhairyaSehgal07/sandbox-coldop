@@ -17,6 +17,8 @@ interface DatePickerProps {
   onChange?: (value: string) => void; // Called with dd.mm.yyyy format
   label?: string; // Optional label override
   id?: string; // Optional id override
+  /** When true, input and container take full width (e.g. for mobile stacks) */
+  fullWidth?: boolean;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -24,6 +26,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   onChange,
   label = 'Select Order Date',
   id = 'date',
+  fullWidth = false,
 }) => {
   const [open, setOpen] = React.useState(false);
 
@@ -78,14 +81,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   };
 
   return (
-    <div className="space-y-3">
+    <div className={cn('space-y-3', fullWidth && 'w-full')}>
       <Label
         htmlFor={id}
         className="font-custom mb-2 block text-base font-semibold"
       >
         {label}
       </Label>
-      <div className="flex items-center gap-3">
+      <div className={cn('flex items-center gap-3', fullWidth && 'w-full')}>
         {/* Manual input field */}
         <input
           id={id}
@@ -94,8 +97,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           value={inputValue}
           onChange={handleInputChange}
           className={cn(
-            'border-input bg-background w-44 rounded-md border px-4 py-2.5 text-sm shadow-sm transition-colors',
-            'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none'
+            'border-input bg-background rounded-md border px-4 py-2.5 text-sm shadow-sm transition-colors',
+            'focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+            fullWidth ? 'min-w-0 flex-1 w-full' : 'w-44'
           )}
         />
         {/* Calendar popover */}

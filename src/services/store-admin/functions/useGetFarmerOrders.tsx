@@ -19,20 +19,37 @@ export interface FarmerVouchersData {
   outgoing: DaybookEntry[];
 }
 
+/** Optional date range filter – YYYY-MM-DD strings for API */
+export interface FarmerOrdersDateRange {
+  from?: string;
+  to?: string;
+}
+
 /** Query key factory – use for invalidation and consistent keys */
 export const farmerOrdersKeys = {
   all: ['store-admin', 'farmer-orders'] as const,
   lists: () => [...farmerOrdersKeys.all, 'list'] as const,
-  list: (farmerStorageLinkId: string) =>
-    [...farmerOrdersKeys.lists(), farmerStorageLinkId] as const,
+  list: (farmerStorageLinkId: string, dateRange?: FarmerOrdersDateRange) =>
+    [
+      ...farmerOrdersKeys.lists(),
+      farmerStorageLinkId,
+      dateRange?.from ?? '',
+      dateRange?.to ?? '',
+    ] as const,
 };
 
 /** Fetcher used by queryOptions and prefetch */
 async function fetchFarmerVouchers(
-  farmerStorageLinkId: string
+  farmerStorageLinkId: string,
+  dateRange?: FarmerOrdersDateRange
 ): Promise<FarmerVouchersData> {
+  const params: Record<string, string> = {};
+  if (dateRange?.from) params.from = dateRange.from;
+  if (dateRange?.to) params.to = dateRange.to;
+
   const { data } = await storeAdminAxiosClient.get<FarmerVouchersApiResponse>(
-    `/store-admin/farmer-storage-links/${farmerStorageLinkId}/vouchers`
+    `/store-admin/farmer-storage-links/${farmerStorageLinkId}/vouchers`,
+    { params }
   );
 
   if (!data.success || data.data == null) {
@@ -46,25 +63,34 @@ async function fetchFarmerVouchers(
 }
 
 /** Query options – use with useQuery, prefetchQuery, or in loaders */
-export function farmerOrdersQueryOptions(farmerStorageLinkId: string) {
+export function farmerOrdersQueryOptions(
+  farmerStorageLinkId: string,
+  dateRange?: FarmerOrdersDateRange
+) {
   return queryOptions({
-    queryKey: farmerOrdersKeys.list(farmerStorageLinkId),
-    queryFn: () => fetchFarmerVouchers(farmerStorageLinkId),
+    queryKey: farmerOrdersKeys.list(farmerStorageLinkId, dateRange),
+    queryFn: () => fetchFarmerVouchers(farmerStorageLinkId, dateRange),
     enabled: Boolean(farmerStorageLinkId),
   });
 }
 
 /** Hook to fetch incoming and outgoing vouchers for a farmer–storage link */
-export function useGetFarmerOrders(farmerStorageLinkId: string | undefined) {
+export function useGetFarmerOrders(
+  farmerStorageLinkId: string | undefined,
+  dateRange?: FarmerOrdersDateRange
+) {
   return useQuery({
-    ...farmerOrdersQueryOptions(farmerStorageLinkId ?? ''),
+    ...farmerOrdersQueryOptions(farmerStorageLinkId ?? '', dateRange),
     enabled: Boolean(farmerStorageLinkId),
   });
 }
 
 /** Prefetch farmer vouchers – e.g. before navigating to people/:farmerStorageLinkId */
-export function prefetchFarmerOrders(farmerStorageLinkId: string) {
+export function prefetchFarmerOrders(
+  farmerStorageLinkId: string,
+  dateRange?: FarmerOrdersDateRange
+) {
   return queryClient.prefetchQuery(
-    farmerOrdersQueryOptions(farmerStorageLinkId)
+    farmerOrdersQueryOptions(farmerStorageLinkId, dateRange)
   );
 }

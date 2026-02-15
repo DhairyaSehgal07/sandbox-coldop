@@ -6,8 +6,6 @@ export const Route = createFileRoute(
 )({
   component: function FarmerProfileRoute() {
     const { farmerStorageLinkId } = Route.useParams();
-    return (
-      <FarmerProfilePage farmerStorageLinkId={farmerStorageLinkId} />
-    );
+    return <FarmerProfilePage farmerStorageLinkId={farmerStorageLinkId} />;
   },
 });

@@ -599,7 +599,9 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                       <Input
                         value={field.state.value}
                         onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        onChange={(e) =>
+                          field.handleChange(e.target.value.toUpperCase())
+                        }
                       />
                       {isInvalid && (
                         <FieldError
@@ -724,6 +726,15 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                                         [size]: num,
                                       });
                                     }}
+                                    onWheel={(e) => e.currentTarget.blur()}
+                                    onKeyDown={(e) => {
+                                      if (
+                                        e.key === 'ArrowUp' ||
+                                        e.key === 'ArrowDown'
+                                      ) {
+                                        e.preventDefault();
+                                      }
+                                    }}
                                     className="w-full sm:w-28 sm:text-right [&]:[-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                   />
                                 </div>
@@ -779,6 +790,15 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                                           ? 0
                                           : Math.max(0, parseInt(raw, 10) || 0);
                                       updateExtraRow(row.id, { quantity: num });
+                                    }}
+                                    onWheel={(e) => e.currentTarget.blur()}
+                                    onKeyDown={(e) => {
+                                      if (
+                                        e.key === 'ArrowUp' ||
+                                        e.key === 'ArrowDown'
+                                      ) {
+                                        e.preventDefault();
+                                      }
                                     }}
                                     className="w-full sm:w-28 sm:text-right [&]:[-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                   />
@@ -951,7 +971,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                                             setLocation(
                                               row.key,
                                               'chamber',
-                                              e.target.value
+                                              e.target.value.toUpperCase()
                                             )
                                           }
                                           placeholder="e.g. A"
@@ -968,7 +988,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                                             setLocation(
                                               row.key,
                                               'floor',
-                                              e.target.value
+                                              e.target.value.toUpperCase()
                                             )
                                           }
                                           placeholder="e.g. 1"
@@ -985,7 +1005,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                                             setLocation(
                                               row.key,
                                               'row',
-                                              e.target.value
+                                              e.target.value.toUpperCase()
                                             )
                                           }
                                           placeholder="e.g. R1"

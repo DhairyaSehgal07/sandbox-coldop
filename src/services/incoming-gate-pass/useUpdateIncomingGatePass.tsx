@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import * as z from 'zod';
@@ -91,6 +92,8 @@ function getUpdateIncomingGatePassError(
  * Validates payload with Zod. On success/error shows toast via sonner.
  */
 export function useUpdateIncomingGatePass() {
+  const navigate = useNavigate();
+
   return useMutation<
     UpdateIncomingGatePassSuccessResponse,
     AxiosError<UpdateIncomingGatePassApiError>,
@@ -128,6 +131,7 @@ export function useUpdateIncomingGatePass() {
         description: data.data ? 'Changes are reflected in daybook' : undefined,
       });
       void queryClient.invalidateQueries({ queryKey: daybookKeys.all });
+      navigate({ to: '/store-admin/daybook' });
     },
 
     onError: (error: AxiosError<UpdateIncomingGatePassApiError> | Error) => {

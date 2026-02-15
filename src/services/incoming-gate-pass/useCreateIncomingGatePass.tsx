@@ -1,10 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { queryClient } from '@/lib/queryClient';
 import storeAdminAxiosClient from '@/lib/axios';
 import { daybookKeys } from '@/services/store-admin/functions/useGetDaybook';
+import { vouchersKeys } from '@/services/accounting/vouchers/useGetAllVouchers';
 
 /* -------------------------------------------------
    API request body schema (matches backend)
@@ -89,6 +91,8 @@ function getCreateIncomingGatePassError(
  * Validates payload with Zod. On success/error shows toast via sonner.
  */
 export function useCreateIncomingGatePass() {
+  const navigate = useNavigate();
+
   return useMutation<
     CreateIncomingGatePassSuccessResponse,
     AxiosError<CreateIncomingGatePassApiError>,
@@ -129,6 +133,8 @@ export function useCreateIncomingGatePass() {
         description: data.data ? 'You can view it in daybook' : undefined,
       });
       void queryClient.invalidateQueries({ queryKey: daybookKeys.all });
+      void queryClient.invalidateQueries({ queryKey: vouchersKeys.all });
+      navigate({ to: '/store-admin/daybook' });
     },
 
     onError: (error: AxiosError<CreateIncomingGatePassApiError> | Error) => {

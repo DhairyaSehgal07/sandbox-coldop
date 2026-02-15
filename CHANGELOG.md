@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-02-15
+
+### Added
+- Farmer profile (People): date range filter (From / To) for orders with DatePicker and Clear button; `useGetFarmerOrders` and API now support optional `from`/`to` query params
+- DatePicker: `fullWidth` prop for full-width layout (e.g. mobile stacks)
+- Incoming gate pass create: on success invalidate vouchers and navigate to daybook
+- Incoming gate pass update and outgoing gate pass create: on success navigate to daybook
+
+### Changed
+- Incoming form: gate pass number and location (chamber, floor, row) inputs now auto-uppercase on change
+- Incoming form: bag quantity number inputs prevent wheel scroll and ArrowUp/ArrowDown to avoid accidental changes
+- Farmer profile: orders list filter layout with date range on the right; query key and prefetch support date range
+
 ## [0.14.0] - 2026-02-13
 
 ### Added

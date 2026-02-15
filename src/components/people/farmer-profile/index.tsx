@@ -31,10 +31,14 @@ import {
   Hash,
   Package,
   Edit,
+  Calendar,
+  X,
 } from 'lucide-react';
 import type { FarmerStorageLink } from '@/types/farmer';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 import { useGetFarmerOrders } from '@/services/store-admin/functions/useGetFarmerOrders';
+import { formatDateToISO } from '@/lib/helpers';
+import { DatePicker } from '@/components/forms/date-picker';
 import IncomingGatePassCard from '@/components/daybook/incoming-gate-pass-card';
 import OutgoingGatePassCard from '@/components/daybook/outgoing-gate-pass-card';
 
@@ -96,13 +100,23 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('latest');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  const dateRange = useMemo(() => {
+    if (!dateFrom && !dateTo) return undefined;
+    return {
+      from: dateFrom ? formatDateToISO(dateFrom).slice(0, 10) : undefined,
+      to: dateTo ? formatDateToISO(dateTo).slice(0, 10) : undefined,
+    };
+  }, [dateFrom, dateTo]);
 
   const {
     data: ordersData,
     isLoading,
     isFetching,
     refetch,
-  } = useGetFarmerOrders(farmerStorageLinkId);
+  } = useGetFarmerOrders(farmerStorageLinkId, dateRange);
 
   const incoming = useMemo(
     () => ordersData?.incoming ?? [],
@@ -318,8 +332,10 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
               className="font-custom focus-visible:ring-primary w-full pl-10 focus-visible:ring-2 focus-visible:ring-offset-2"
             />
           </div>
+
           <ItemFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex w-full flex-col gap-3 sm:flex-1 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-4">
+            {/* Left: sorting filters */}
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:gap-4">
               {/* Orders filter – same as daybook */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -381,6 +397,54 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+
+            {/* Right: date range filter */}
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
+                <span className="font-custom text-muted-foreground shrink-0 text-sm font-medium">
+                  Period
+                </span>
+              </div>
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+                <div className="w-full min-w-0 sm:w-auto sm:min-w-32">
+                  <DatePicker
+                    id="voucher-date-from"
+                    label="From"
+                    value={dateFrom}
+                    onChange={setDateFrom}
+                    fullWidth
+                  />
+                </div>
+                <span className="font-custom text-muted-foreground hidden text-sm sm:inline">
+                  to
+                </span>
+                <div className="w-full min-w-0 sm:w-auto sm:min-w-32">
+                  <DatePicker
+                    id="voucher-date-to"
+                    label="To"
+                    value={dateTo}
+                    onChange={setDateTo}
+                    fullWidth
+                  />
+                </div>
+                {(dateFrom || dateTo) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="font-custom text-muted-foreground hover:text-foreground h-8 gap-1.5 rounded-lg px-2 sm:shrink-0"
+                    onClick={() => {
+                      setDateFrom('');
+                      setDateTo('');
+                    }}
+                    aria-label="Clear date range"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="hidden sm:inline">Clear</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </ItemFooter>
         </Item>
