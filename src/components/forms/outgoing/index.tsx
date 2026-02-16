@@ -97,6 +97,7 @@ function buildOutgoingPayload(
     remarks: string;
     from?: string;
     to?: string;
+    truckNumber?: string;
   },
   gatePassNo: number,
   cellRemovedQuantities: Record<string, number>,
@@ -140,6 +141,9 @@ function buildOutgoingPayload(
     date,
     ...(formValues.from?.trim() && { from: formValues.from.trim() }),
     ...(formValues.to?.trim() && { to: formValues.to.trim() }),
+    ...(formValues.truckNumber?.trim() && {
+      truckNumber: formValues.truckNumber.trim(),
+    }),
     incomingGatePasses,
     remarks: formValues.remarks?.trim() ?? '',
   };
@@ -757,6 +761,7 @@ export const OutgoingForm = memo(function OutgoingForm({
             orderDate: value.orderDate,
             from: value.from,
             to: value.to,
+            truckNumber: value.truckNumber?.trim() || undefined,
             remarks: value.remarks,
           },
           gatePassNo,

@@ -226,6 +226,9 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
               icon={MapPin}
             />
           )}
+          {entry.truckNumber?.trim() && (
+            <DetailRow label="Truck No." value={entry.truckNumber.trim()} />
+          )}
         </div>
 
         <div className="border-border/50 flex w-full items-center justify-between border-t pt-4">

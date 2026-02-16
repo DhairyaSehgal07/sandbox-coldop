@@ -32,6 +32,7 @@ export const createOutgoingGatePassBodySchema = z.object({
   date: z.string().min(1, 'Date is required'),
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
+  truckNumber: z.string().trim().optional(),
   incomingGatePasses: z
     .array(incomingGatePassEntrySchema)
     .min(1, 'At least one incoming gate pass with allocations is required'),
