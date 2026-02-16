@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,25 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const coldStorage = useStore((s) => s.coldStorage);
+  const preferenceSizes = useStore(
+    (s) => s.preferences?.commodities?.[0]?.sizes ?? []
+  );
+
+  /** Bag sizes in table order: same as store preferences, then any extras. */
+  const bagSizesOrdered = useMemo(() => {
+    const bagSizes = entry.bagSizes ?? [];
+    if (preferenceSizes.length === 0) return bagSizes;
+    const orderMap = new Map(
+      preferenceSizes.map((size, i) => [size.trim(), i])
+    );
+    return [...bagSizes].sort((a, b) => {
+      const nameA = (a.name ?? '').trim();
+      const nameB = (b.name ?? '').trim();
+      const idxA = orderMap.get(nameA) ?? Infinity;
+      const idxB = orderMap.get(nameB) ?? Infinity;
+      return idxA - idxB;
+    });
+  }, [entry.bagSizes, preferenceSizes]);
 
   const handlePrintPdf = async () => {
     // Open window synchronously so mobile popup blockers allow it
@@ -110,9 +129,14 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
   const farmerMobile = farmer?.mobileNumber ?? '—';
   const accountNumber = entry.farmerStorageLinkId?.accountNumber ?? '—';
 
-  const bagSizes = entry.bagSizes ?? [];
-  const totalInitial = bagSizes.reduce((s, b) => s + b.initialQuantity, 0);
-  const totalCurrent = bagSizes.reduce((s, b) => s + b.currentQuantity, 0);
+  const totalInitial = bagSizesOrdered.reduce(
+    (s, b) => s + b.initialQuantity,
+    0
+  );
+  const totalCurrent = bagSizesOrdered.reduce(
+    (s, b) => s + b.currentQuantity,
+    0
+  );
   const lotNo =
     totalInitial > 0
       ? `${entry.gatePassNo}/${totalInitial}`
@@ -252,7 +276,7 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
                 </div>
               </section>
 
-              {bagSizes.length > 0 && (
+              {bagSizesOrdered.length > 0 && (
                 <section className="w-full">
                   <h4 className="text-muted-foreground/70 mb-3 text-xs font-semibold tracking-wider uppercase">
                     Order Details
@@ -276,7 +300,7 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
                         </TableRow>
                       </TableHeader>
                       <TableBody className="font-custom">
-                        {bagSizes.map((bag, idx) => (
+                        {bagSizesOrdered.map((bag, idx) => (
                           <TableRow
                             key={`${bag.name}-${idx}`}
                             className="border-border/50 bg-background hover:bg-background"

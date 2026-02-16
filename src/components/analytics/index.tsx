@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
 import {
   Item,
@@ -12,10 +12,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Package, RefreshCw, Wheat, Ruler } from 'lucide-react';
 import { useGetStorageSummary } from '@/services/analytics/useGetStorageSummary';
 import { StorageSummaryTable } from '@/components/analytics/storage-summary-table';
+import { useStore } from '@/stores/store';
 
 const AnalyticsPage = memo(function AnalyticsPage() {
   const { data, isLoading, error, refetch, isFetching } =
     useGetStorageSummary();
+  const preferenceSizes = useStore(
+    (s) => s.preferences?.commodities?.[0]?.sizes ?? []
+  );
+
+  /** Table size columns: preference order first, then any sizes from API not in preferences. */
+  const sizesForTable = useMemo(() => {
+    const fromApi = data?.chartData?.sizes ?? [];
+    if (preferenceSizes.length === 0) return fromApi;
+    const ordered = [...preferenceSizes];
+    const seen = new Set(preferenceSizes.map((s) => s.trim()));
+    for (const s of fromApi) {
+      const t = (s ?? '').trim();
+      if (t && !seen.has(t)) {
+        seen.add(t);
+        ordered.push(s);
+      }
+    }
+    return ordered;
+  }, [data?.chartData?.sizes, preferenceSizes]);
 
   return (
     <main className="mx-auto max-w-7xl p-2 sm:p-4 lg:p-6">
@@ -138,7 +158,7 @@ const AnalyticsPage = memo(function AnalyticsPage() {
               {/* Summary table */}
               <StorageSummaryTable
                 stockSummary={data.stockSummary}
-                sizes={data.chartData.sizes}
+                sizes={sizesForTable}
               />
             </div>
           ) : null}

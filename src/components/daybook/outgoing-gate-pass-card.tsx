@@ -29,12 +29,31 @@ function formatVoucherDate(date: string | undefined): string {
   return format(new Date(date), 'dd MMM yyyy');
 }
 
+function sortByPreferenceOrder<T>(
+  items: T[],
+  getSize: (item: T) => string,
+  preferenceSizes: string[]
+): T[] {
+  if (preferenceSizes.length === 0) return items;
+  const orderMap = new Map(
+    preferenceSizes.map((size, i) => [size.trim(), i])
+  );
+  return [...items].sort((a, b) => {
+    const idxA = orderMap.get(getSize(a).trim()) ?? Infinity;
+    const idxB = orderMap.get(getSize(b).trim()) ?? Infinity;
+    return idxA - idxB;
+  });
+}
+
 const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
   entry,
 }: OutgoingGatePassCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const coldStorage = useStore((s) => s.coldStorage);
+  const preferenceSizes = useStore(
+    (s) => s.preferences?.commodities?.[0]?.sizes ?? []
+  );
 
   const handlePrintPdf = async () => {
     // Open window synchronously so mobile popup blockers allow it
@@ -94,6 +113,17 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
     [entry.orderDetails]
   );
 
+  /** Order details rows in preference order for table display. */
+  const orderDetailsSorted = useMemo(
+    () =>
+      sortByPreferenceOrder(
+        orderDetails,
+        (od) => (od.size ?? '').trim(),
+        preferenceSizes
+      ),
+    [orderDetails, preferenceSizes]
+  );
+
   const incomingEntries = useMemo(
     () => entry.incomingGatePassEntries ?? [],
     [entry.incomingGatePassEntries]
@@ -125,7 +155,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
     return entry.variety ?? '—';
   }, [entry.variety, entry.incomingGatePassSnapshots, incomingEntries]);
 
-  /** Rows from new API shape (incomingGatePassEntries): size, variety, ref, issued. */
+  /** Rows from new API shape (incomingGatePassEntries): size, variety, ref, issued. Sorted by preference order. */
   const breakdownRowsNew = useMemo(() => {
     const rows: {
       size: string;
@@ -146,11 +176,8 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
         });
       }
     }
-    return rows.sort(
-      (a, b) =>
-        a.size.localeCompare(b.size) || a.variety.localeCompare(b.variety)
-    );
-  }, [incomingEntries]);
+    return sortByPreferenceOrder(rows, (r) => r.size, preferenceSizes);
+  }, [incomingEntries, preferenceSizes]);
 
   /**
    * One row per (size, location) from incoming snapshots (legacy) so the table shows
@@ -193,13 +220,8 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
         });
       }
     }
-    return rows.sort(
-      (a, b) =>
-        a.size.localeCompare(b.size) ||
-        a.variety.localeCompare(b.variety) ||
-        a.location.localeCompare(b.location)
-    );
-  }, [entry.incomingGatePassSnapshots]);
+    return sortByPreferenceOrder(rows, (r) => r.size, preferenceSizes);
+  }, [entry.incomingGatePassSnapshots, preferenceSizes]);
 
   const useNewFormat = breakdownRowsNew.length > 0;
 
@@ -492,7 +514,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                                 </td>
                               </tr>
                             ))
-                          : orderDetails.map((od, idx) => {
+                          : orderDetailsSorted.map((od, idx) => {
                               const initialQty =
                                 (od.quantityAvailable ?? 0) +
                                 (od.quantityIssued ?? 0);
