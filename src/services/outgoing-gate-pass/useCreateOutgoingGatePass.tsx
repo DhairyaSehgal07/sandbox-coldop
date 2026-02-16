@@ -33,6 +33,13 @@ export const createOutgoingGatePassBodySchema = z.object({
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
   truckNumber: z.string().trim().optional(),
+  manualParchiNumber: z
+    .optional(
+      z.coerce
+        .number()
+        .int('Manual parchi number must be an integer')
+        .positive('Manual parchi number must be a positive number')
+    ),
   incomingGatePasses: z
     .array(incomingGatePassEntrySchema)
     .min(1, 'At least one incoming gate pass with allocations is required'),

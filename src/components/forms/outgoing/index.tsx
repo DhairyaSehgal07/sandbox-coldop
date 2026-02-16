@@ -98,6 +98,7 @@ function buildOutgoingPayload(
     from?: string;
     to?: string;
     truckNumber?: string;
+    manualParchiNumber?: string;
   },
   gatePassNo: number,
   cellRemovedQuantities: Record<string, number>,
@@ -135,6 +136,19 @@ function buildOutgoingPayload(
 
   const date = payloadDateSchema.parse(formValues.orderDate);
 
+  const manualParchiNum =
+    formValues.manualParchiNumber?.trim();
+  const manualParchiNumber =
+    manualParchiNum != null &&
+    manualParchiNum !== '' &&
+    /^\d+$/.test(manualParchiNum)
+      ? Number.parseInt(manualParchiNum, 10)
+      : undefined;
+  const manualParchiPayload =
+    manualParchiNumber != null && manualParchiNumber > 0
+      ? { manualParchiNumber }
+      : {};
+
   return {
     farmerStorageLinkId: formValues.farmerStorageLinkId,
     gatePassNo,
@@ -144,6 +158,7 @@ function buildOutgoingPayload(
     ...(formValues.truckNumber?.trim() && {
       truckNumber: formValues.truckNumber.trim(),
     }),
+    ...manualParchiPayload,
     incomingGatePasses,
     remarks: formValues.remarks?.trim() ?? '',
   };
@@ -712,7 +727,17 @@ export const OutgoingForm = memo(function OutgoingForm({
   const formSchema = useMemo(
     () =>
       z.object({
-        manualParchiNumber: z.string().trim().optional(),
+        manualParchiNumber: z
+          .string()
+          .trim()
+          .optional()
+          .refine(
+            (v) =>
+              v === undefined ||
+              v === '' ||
+              (/^\d+$/.test(v) && Number.parseInt(v, 10) > 0),
+            'Manual parchi number must be a positive integer'
+          ),
         farmerStorageLinkId: z.string().min(1, 'Please select a farmer'),
         orderDate: payloadDateSchema,
         from: z.string().trim().optional(),
@@ -763,6 +788,7 @@ export const OutgoingForm = memo(function OutgoingForm({
             to: value.to,
             truckNumber: value.truckNumber?.trim() || undefined,
             remarks: value.remarks,
+            manualParchiNumber: value.manualParchiNumber?.trim() || undefined,
           },
           gatePassNo,
           cellRemovedQuantities,
@@ -831,7 +857,7 @@ export const OutgoingForm = memo(function OutgoingForm({
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="e.g. P-123"
+                  placeholder="e.g. 123"
                   className="font-custom"
                 />
               </Field>

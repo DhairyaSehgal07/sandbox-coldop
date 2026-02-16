@@ -25,6 +25,7 @@ import {
   Package,
   MapPin,
   User,
+  Truck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -118,6 +119,7 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
       : `${entry.gatePassNo}/—`;
 
   const variety = entry.variety ?? '—';
+  const truckNumber = entry.truckNumber ?? '—';
   const status = (entry.status ?? '—').replace(/_/g, ' ');
 
   return (
@@ -163,11 +165,12 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
           </div>
         </CardHeader>
 
-        <div className="mb-4 grid w-full grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mb-4 grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <DetailRow label="Farmer" value={farmerName} icon={User} />
           <DetailRow label="Account" value={`#${accountNumber}`} />
           <DetailRow label="Variety" value={variety} icon={Package} />
           <DetailRow label="Lot No" value={lotNo} />
+          <DetailRow label="Truck No" value={truckNumber} icon={Truck} />
         </div>
 
         <div className="border-border/50 flex w-full items-center justify-between border-t pt-4">

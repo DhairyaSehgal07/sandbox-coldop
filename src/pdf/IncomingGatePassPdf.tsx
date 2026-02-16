@@ -353,6 +353,12 @@ export const IncomingGatePassPdf = memo(function IncomingGatePassPdf({
                 <Text style={styles.detailLabel}>Created By:</Text>
                 <Text style={styles.detailValue}>{createdBy}</Text>
               </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Truck No:</Text>
+                <Text style={styles.detailValue}>
+                  {entry.truckNumber?.trim() ?? '—'}
+                </Text>
+              </View>
             </View>
           </View>
         </View>

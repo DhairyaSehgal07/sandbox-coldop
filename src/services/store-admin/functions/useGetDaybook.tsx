@@ -95,6 +95,7 @@ export interface IncomingGatePassEntry {
   type: 'RECEIPT';
   variety?: string;
   bagSizes: DaybookBagSize[];
+  truckNumber?: string;
   status: string;
   remarks: string;
   manualParchiNumber?: string;
