@@ -4,6 +4,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useStore } from '@/stores/store';
 import {
   Table,
   TableBody,
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type {
-  DaybookEntry,
+  IncomingGatePassEntry,
   DaybookBagSize,
 } from '@/services/store-admin/functions/useGetDaybook';
 import {
@@ -24,7 +25,6 @@ import {
   Package,
   MapPin,
   User,
-  Truck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -32,7 +32,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { DetailRow } from './detail-row';
 
 interface IncomingGatePassCardProps {
-  entry: DaybookEntry;
+  entry: IncomingGatePassEntry;
 }
 
 function formatLocation(bag: DaybookBagSize): string {
@@ -52,6 +52,8 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
+  const coldStorage = useStore((s) => s.coldStorage);
+
   const handlePrintPdf = async () => {
     // Open window synchronously so mobile popup blockers allow it
     const printWindow = window.open('', '_blank');
@@ -66,7 +68,20 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
         import('@react-pdf/renderer'),
         import('@/pdf/IncomingGatePassPdf'),
       ]);
-      const blob = await pdf(<IncomingGatePassPdf />).toBlob();
+      const blob = await pdf(
+        <IncomingGatePassPdf
+          entry={entry}
+          coldStorage={
+            coldStorage
+              ? {
+                  name: coldStorage.name,
+                  address: coldStorage.address,
+                  imageUrl: coldStorage.imageUrl,
+                }
+              : null
+          }
+        />
+      ).toBlob();
       const url = URL.createObjectURL(blob);
       if (printWindow) {
         printWindow.location.href = url;
@@ -151,9 +166,6 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
         <div className="mb-4 grid w-full grid-cols-2 gap-4 lg:grid-cols-4">
           <DetailRow label="Farmer" value={farmerName} icon={User} />
           <DetailRow label="Account" value={`#${accountNumber}`} />
-          {entry.truckNumber != null && entry.truckNumber !== '' && (
-            <DetailRow label="Truck" value={entry.truckNumber} icon={Truck} />
-          )}
           <DetailRow label="Variety" value={variety} icon={Package} />
           <DetailRow label="Lot No" value={lotNo} />
         </div>
@@ -200,7 +212,9 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
               onClick={handlePrintPdf}
               disabled={isGeneratingPdf}
               className="h-8 w-8 p-0"
-              aria-label={isGeneratingPdf ? 'Generating PDF…' : 'Print gate pass'}
+              aria-label={
+                isGeneratingPdf ? 'Generating PDF…' : 'Print gate pass'
+              }
             >
               {isGeneratingPdf ? (
                 <Spinner className="h-3.5 w-3.5" />
@@ -228,83 +242,72 @@ const IncomingGatePassCard = memo(function IncomingGatePassCard({
                     value={farmerAddress}
                     icon={MapPin}
                   />
+                  <DetailRow
+                    label="Created By"
+                    value={entry.createdBy?.name ?? '—'}
+                  />
                 </div>
               </section>
 
               {bagSizes.length > 0 && (
                 <section className="w-full">
                   <h4 className="text-muted-foreground/70 mb-3 text-xs font-semibold tracking-wider uppercase">
-                    Stock Details
+                    Order Details
                   </h4>
-                  <div className="bg-muted/30 w-full overflow-hidden rounded-lg shadow-sm">
+                  <div className="border-border w-full overflow-hidden rounded-lg border shadow-sm">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/60 hover:bg-muted/60 border-border/50 font-custom">
-                          <TableHead className="text-foreground font-custom font-semibold">
-                            Type
+                          <TableHead className="text-muted-foreground font-custom text-xs font-semibold tracking-wider uppercase">
+                            Size
                           </TableHead>
-                          {bagSizes.map((bag, idx) => (
-                            <TableHead
-                              key={idx}
-                              className="text-foreground font-custom text-center font-semibold"
-                            >
-                              {bag.name}
-                            </TableHead>
-                          ))}
-                          <TableHead className="text-foreground font-custom text-center font-semibold">
-                            Total
+                          <TableHead className="text-muted-foreground font-custom text-xs font-semibold tracking-wider uppercase">
+                            Location
+                          </TableHead>
+                          <TableHead className="text-muted-foreground font-custom text-right text-xs font-semibold tracking-wider uppercase">
+                            Qty
+                          </TableHead>
+                          <TableHead className="text-muted-foreground font-custom text-right text-xs font-semibold tracking-wider uppercase">
+                            Initial
                           </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="font-custom">
-                        <TableRow className="border-border/50 bg-background hover:bg-background">
-                          <TableCell className="text-foreground font-medium">
-                            Quantity
-                          </TableCell>
-                          {bagSizes.map((bag, idx) => (
-                            <TableCell
-                              key={idx}
-                              className="text-foreground text-center"
-                            >
-                              {bag.currentQuantity}/{bag.initialQuantity}
+                        {bagSizes.map((bag, idx) => (
+                          <TableRow
+                            key={`${bag.name}-${idx}`}
+                            className="border-border/50 bg-background hover:bg-background"
+                          >
+                            <TableCell className="text-foreground font-medium">
+                              {bag.name ?? '—'}
                             </TableCell>
-                          ))}
-                          <TableCell className="text-primary text-center font-bold">
-                            {totalCurrent}/{totalInitial}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border/50 bg-muted/20 hover:bg-muted/20">
-                          <TableCell className="text-foreground font-medium">
-                            Location
-                          </TableCell>
-                          {bagSizes.map((bag, idx) => (
-                            <TableCell
-                              key={idx}
-                              className="text-foreground text-center"
-                            >
+                            <TableCell className="text-foreground">
                               {formatLocation(bag)}
                             </TableCell>
-                          ))}
-                          <TableCell className="text-muted-foreground text-center">
-                            —
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="border-border/50 bg-background hover:bg-background">
-                          <TableCell className="text-foreground font-medium">
-                            Marka
-                          </TableCell>
-                          {bagSizes.map((bag, idx) => (
-                            <TableCell
-                              key={idx}
-                              className="text-foreground text-center"
-                            >
-                              {bag.initialQuantity > 0
-                                ? `${entry.gatePassNo}/${bag.initialQuantity}`
-                                : '—'}
+                            <TableCell className="text-foreground text-right">
+                              {(bag.currentQuantity ?? 0).toLocaleString(
+                                'en-IN'
+                              )}
                             </TableCell>
-                          ))}
-                          <TableCell className="text-muted-foreground text-center">
+                            <TableCell className="text-foreground text-right">
+                              {(bag.initialQuantity ?? 0).toLocaleString(
+                                'en-IN'
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="border-primary bg-primary/10 hover:bg-primary/10 border-t-2">
+                          <TableCell className="font-custom text-primary font-bold">
+                            Total
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
                             —
+                          </TableCell>
+                          <TableCell className="font-custom text-primary text-right font-bold">
+                            {totalCurrent.toLocaleString('en-IN')}
+                          </TableCell>
+                          <TableCell className="font-custom text-primary text-right font-bold">
+                            {totalInitial.toLocaleString('en-IN')}
                           </TableCell>
                         </TableRow>
                       </TableBody>

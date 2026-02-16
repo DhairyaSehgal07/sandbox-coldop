@@ -52,7 +52,11 @@ import {
 } from '@/components/ui/empty';
 
 import { useGetDaybook } from '@/services/store-admin/functions/useGetDaybook';
-import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
+import type {
+  DaybookEntry,
+  IncomingGatePassEntry,
+  OutgoingGatePassEntry,
+} from '@/services/store-admin/functions/useGetDaybook';
 import { useSearchDaybook } from '@/services/store-admin/functions/useSearchDaybook';
 import IncomingGatePassCard from '@/components/daybook/incoming-gate-pass-card';
 import OutgoingGatePassCard from '@/components/daybook/outgoing-gate-pass-card';
@@ -420,9 +424,15 @@ const DaybookPage = memo(function DaybookPage() {
               <div className="w-full space-y-4">
                 {entries.map((entry) =>
                   entry.type === 'RECEIPT' ? (
-                    <IncomingGatePassCard key={entry._id} entry={entry} />
+                    <IncomingGatePassCard
+                      key={entry._id}
+                      entry={entry as IncomingGatePassEntry}
+                    />
                   ) : (
-                    <OutgoingGatePassCard key={entry._id} entry={entry} />
+                    <OutgoingGatePassCard
+                      key={entry._id}
+                      entry={entry as OutgoingGatePassEntry}
+                    />
                   )
                 )}
               </div>

@@ -38,7 +38,11 @@ import {
   FileText,
 } from 'lucide-react';
 import type { FarmerStorageLink } from '@/types/farmer';
-import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
+import type {
+  DaybookEntry,
+  IncomingGatePassEntry,
+  OutgoingGatePassEntry,
+} from '@/services/store-admin/functions/useGetDaybook';
 import { useGetFarmerGatePasses } from '@/services/store-admin/functions/useGetFarmerGatePasses';
 import { formatDateToISO } from '@/lib/helpers';
 import { DatePicker } from '@/components/forms/date-picker';
@@ -276,7 +280,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-full focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="focus-visible:ring-primary h-10 w-10 rounded-full focus-visible:ring-2 focus-visible:ring-offset-2"
                   aria-label="Edit farmer"
                   onClick={() => setEditDialogOpen(true)}
                 >
@@ -301,7 +305,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="outline"
-                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground"
+                  className="font-custom focus-visible:ring-primary dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-offset-2"
                   onClick={() => setFinancesDialogOpen(true)}
                 >
                   <Wallet className="text-primary h-4 w-4" />
@@ -316,7 +320,8 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                     if (action === 'receive-payment')
                       setReceivePaymentDialogOpen(true);
                     if (action === 'add-payment') setAddPaymentDialogOpen(true);
-                    if (action === 'add-discount') setAddDiscountDialogOpen(true);
+                    if (action === 'add-discount')
+                      setAddDiscountDialogOpen(true);
                     if (action === 'add-charge') setAddChargeDialogOpen(true);
                   }}
                 />
@@ -325,8 +330,8 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   onOpenChange={setBuyPotatoDialogOpen}
                 >
                   <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
-                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
-                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                    <DialogHeader className="shrink-0 space-y-0.5 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-card-foreground text-base leading-tight font-bold tracking-tight sm:text-2xl">
                         Buy Potato
                       </DialogTitle>
                       <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
@@ -334,7 +339,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                         {link.farmerId.name}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                    <div className="min-h-0 shrink-0 px-3 pt-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-1 sm:pb-5">
                       <BuyPotatoForm
                         defaultFarmerStorageLinkId={link._id}
                         farmerName={link.farmerId.name}
@@ -349,16 +354,15 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   onOpenChange={setSellPotatoDialogOpen}
                 >
                   <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
-                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
-                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                    <DialogHeader className="shrink-0 space-y-0.5 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-card-foreground text-base leading-tight font-bold tracking-tight sm:text-2xl">
                         Sell Potato
                       </DialogTitle>
                       <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
-                        Create a voucher for potato sale to{' '}
-                        {link.farmerId.name}
+                        Create a voucher for potato sale to {link.farmerId.name}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                    <div className="min-h-0 shrink-0 px-3 pt-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-1 sm:pb-5">
                       <SellPotatoForm
                         defaultFarmerStorageLinkId={link._id}
                         farmerName={link.farmerId.name}
@@ -373,15 +377,15 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   onOpenChange={setReceivePaymentDialogOpen}
                 >
                   <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
-                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
-                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                    <DialogHeader className="shrink-0 space-y-0.5 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-card-foreground text-base leading-tight font-bold tracking-tight sm:text-2xl">
                         Receive Payment
                       </DialogTitle>
                       <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
                         Record payment received from {link.farmerId.name}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                    <div className="min-h-0 shrink-0 px-3 pt-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-1 sm:pb-5">
                       <ReceivePaymentForm
                         defaultFarmerStorageLinkId={link._id}
                         farmerName={link.farmerId.name}
@@ -396,15 +400,15 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   onOpenChange={setAddPaymentDialogOpen}
                 >
                   <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
-                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
-                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                    <DialogHeader className="shrink-0 space-y-0.5 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-card-foreground text-base leading-tight font-bold tracking-tight sm:text-2xl">
                         Add Payment
                       </DialogTitle>
                       <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
                         Record payment made to {link.farmerId.name}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                    <div className="min-h-0 shrink-0 px-3 pt-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-1 sm:pb-5">
                       <AddPaymentForm
                         defaultFarmerStorageLinkId={link._id}
                         farmerName={link.farmerId.name}
@@ -419,15 +423,15 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   onOpenChange={setAddDiscountDialogOpen}
                 >
                   <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
-                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
-                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                    <DialogHeader className="shrink-0 space-y-0.5 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-card-foreground text-base leading-tight font-bold tracking-tight sm:text-2xl">
                         Add Discount
                       </DialogTitle>
                       <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
                         Create a discount voucher for {link.farmerId.name}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                    <div className="min-h-0 shrink-0 px-3 pt-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-1 sm:pb-5">
                       <AddDiscountForm
                         defaultFarmerStorageLinkId={link._id}
                         farmerName={link.farmerId.name}
@@ -442,8 +446,8 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                   onOpenChange={setAddChargeDialogOpen}
                 >
                   <DialogContent className="font-custom border-border bg-card text-card-foreground w-[calc(100%-2rem)] max-w-md gap-0 overflow-hidden rounded-xl p-0 shadow-sm sm:max-w-lg">
-                    <DialogHeader className="space-y-0.5 shrink-0 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
-                      <DialogTitle className="font-custom text-base font-bold leading-tight tracking-tight text-card-foreground sm:text-2xl">
+                    <DialogHeader className="shrink-0 space-y-0.5 p-3 pr-11 sm:space-y-1 sm:p-5 sm:pr-12">
+                      <DialogTitle className="font-custom text-card-foreground text-base leading-tight font-bold tracking-tight sm:text-2xl">
                         Add Charge
                       </DialogTitle>
                       <DialogDescription className="font-custom text-muted-foreground line-clamp-1 text-xs sm:text-sm">
@@ -451,7 +455,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                         {link.farmerId.name}
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="min-h-0 shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-0.5 sm:px-5 sm:pb-5 sm:pt-1">
+                    <div className="min-h-0 shrink-0 px-3 pt-0.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-1 sm:pb-5">
                       <AddChargeForm
                         defaultFarmerStorageLinkId={link._id}
                         farmerName={link.farmerId.name}
@@ -463,7 +467,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                 </Dialog>
                 <Button
                   variant="outline"
-                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground"
+                  className="font-custom focus-visible:ring-primary dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-offset-2"
                   asChild
                 >
                   <Link
@@ -481,7 +485,7 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
                 </Button>
                 <Button
                   variant="outline"
-                  className="font-custom gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground"
+                  className="font-custom focus-visible:ring-primary dark:border-border dark:bg-background dark:text-foreground dark:hover:bg-accent dark:hover:text-foreground gap-2 rounded-lg border-gray-200 bg-white text-[#333] shadow-sm transition-colors duration-200 hover:bg-gray-50 hover:text-[#333] focus-visible:ring-2 focus-visible:ring-offset-2"
                 >
                   <FileText className="text-primary h-4 w-4" />
                   View Stock Ledger
@@ -775,12 +779,12 @@ const FarmerProfilePage = ({ farmerStorageLinkId }: FarmerProfilePageProps) => {
               entry.type === 'RECEIPT' ? (
                 <IncomingGatePassCard
                   key={entry._id ?? `inc-${idx}`}
-                  entry={entry}
+                  entry={entry as IncomingGatePassEntry}
                 />
               ) : (
                 <OutgoingGatePassCard
                   key={entry._id ?? `out-${idx}`}
-                  entry={entry}
+                  entry={entry as OutgoingGatePassEntry}
                 />
               )
             )}

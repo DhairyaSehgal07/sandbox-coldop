@@ -17,10 +17,11 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Spinner } from '@/components/ui/spinner';
 import { DetailRow } from './detail-row';
-import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
+import type { OutgoingGatePassEntry } from '@/services/store-admin/functions/useGetDaybook';
+import { useStore } from '@/stores/store';
 
 interface OutgoingGatePassCardProps {
-  entry: DaybookEntry;
+  entry: OutgoingGatePassEntry;
 }
 
 function formatVoucherDate(date: string | undefined): string {
@@ -33,6 +34,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
 }: OutgoingGatePassCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const coldStorage = useStore((s) => s.coldStorage);
 
   const handlePrintPdf = async () => {
     // Open window synchronously so mobile popup blockers allow it
@@ -48,7 +50,20 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
         import('@react-pdf/renderer'),
         import('@/pdf/OutgoingGatePassPdf'),
       ]);
-      const blob = await pdf(<OutgoingGatePassPdf />).toBlob();
+      const blob = await pdf(
+        <OutgoingGatePassPdf
+          entry={entry}
+          coldStorage={
+            coldStorage
+              ? {
+                  name: coldStorage.name,
+                  address: coldStorage.address,
+                  imageUrl: coldStorage.imageUrl,
+                }
+              : null
+          }
+        />
+      ).toBlob();
       const url = URL.createObjectURL(blob);
       if (printWindow) {
         printWindow.location.href = url;
@@ -327,6 +342,17 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
           <>
             <Separator className="my-5" />
             <div className="w-full space-y-5">
+              <section className="w-full">
+                <h4 className="text-muted-foreground/70 mb-3 text-xs font-semibold tracking-wider uppercase">
+                  Entry Details
+                </h4>
+                <div className="bg-muted/30 grid w-full grid-cols-1 gap-3 rounded-lg p-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailRow
+                    label="Created By"
+                    value={entry.createdBy?.name ?? '—'}
+                  />
+                </div>
+              </section>
               <section className="w-full">
                 <h4 className="text-muted-foreground/70 mb-3 text-xs font-semibold tracking-wider uppercase">
                   Detailed Breakdown

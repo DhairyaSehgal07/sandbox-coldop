@@ -71,11 +71,62 @@ export interface DaybookFarmerStorageLink {
   accountNumber: number;
 }
 
+export interface DaybookCreatedBy {
+  _id: string;
+  name: string;
+}
+
+/** Incoming gate pass (RECEIPT) entry – shape for IGP PDF and card. Only these fields are used. */
+export interface IncomingGatePassEntry {
+  _id: string;
+  farmerStorageLinkId: {
+    _id: string;
+    farmerId: {
+      _id: string;
+      name: string;
+      address: string;
+      mobileNumber: string;
+    };
+    accountNumber: number;
+  };
+  createdBy: DaybookCreatedBy;
+  gatePassNo: number;
+  date: string;
+  type: 'RECEIPT';
+  variety?: string;
+  bagSizes: DaybookBagSize[];
+  status: string;
+  remarks: string;
+  manualParchiNumber?: string;
+  createdAt: string;
+}
+
+/** Outgoing gate pass (DELIVERY) entry – shape for OGP PDF and card. */
+export interface OutgoingGatePassEntry {
+  _id: string;
+  farmerStorageLinkId: DaybookFarmerStorageLink;
+  createdBy: DaybookCreatedBy;
+  gatePassNo: number;
+  date: string;
+  type: 'DELIVERY';
+  variety?: string;
+  truckNumber?: string;
+  orderDetails?: DaybookOrderDetail[];
+  incomingGatePassSnapshots?: DaybookIncomingGatePassSnapshot[];
+  incomingGatePassEntries?: DaybookOutgoingIncomingEntry[];
+  from?: string;
+  to?: string;
+  status: string;
+  remarks: string;
+  manualParchiNumber?: string;
+  createdAt: string;
+}
+
 /** Single daybook entry – RECEIPT has bagSizes; DELIVERY has orderDetails and/or incomingGatePassEntries, from, to */
 export interface DaybookEntry {
   _id: string;
   farmerStorageLinkId: DaybookFarmerStorageLink;
-  createdBy: string;
+  createdBy: DaybookCreatedBy;
   gatePassNo: number;
   date: string;
   type: 'RECEIPT' | 'DELIVERY';
