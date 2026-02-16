@@ -54,11 +54,12 @@ const TradingAndPLAccount = memo(function TradingAndPLAccount({
       return null;
     }
 
+    // Stock in Hand: use closingBalance when defined (even if 0), otherwise use balance
     const stockInHand = ledgers.find((l) => l.category === 'Stock in Hand');
     const openingStock = stockInHand?.openingBalance ?? 0;
     const closingStock =
-      stockInHand != null && stockInHand.closingBalance != null
-        ? stockInHand.closingBalance
+      stockInHand != null && stockInHand.closingBalance !== undefined
+        ? (stockInHand.closingBalance ?? 0)
         : (stockInHand?.balance ?? 0);
 
     const incomeLedgers = ledgers.filter((l) => l.type === 'Income');
@@ -76,7 +77,7 @@ const TradingAndPLAccount = memo(function TradingAndPLAccount({
     }> = [];
 
     incomeLedgers.forEach((ledger) => {
-      const balance = ledger.balance ?? ledger.closingBalance ?? 0;
+      const balance = ledger.balance || ledger.closingBalance || 0;
       const existing = incomeCategories.find(
         (c) => c.subType === ledger.subType && c.category === ledger.category
       );
@@ -92,7 +93,7 @@ const TradingAndPLAccount = memo(function TradingAndPLAccount({
     });
 
     expenseLedgers.forEach((ledger) => {
-      const balance = ledger.balance ?? ledger.closingBalance ?? 0;
+      const balance = ledger.balance || ledger.closingBalance || 0;
       const existing = expenseCategories.find(
         (c) => c.subType === ledger.subType && c.category === ledger.category
       );

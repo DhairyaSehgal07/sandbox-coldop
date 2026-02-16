@@ -1,6 +1,5 @@
 import { memo, useMemo } from 'react';
 
-import { useGetBalanceSheet } from '@/services/accounting/useGetBalanceSheet';
 import { useGetAllLedgers } from '@/services/accounting/ledgers/useGetAllLedgers';
 
 import BalanceSheet from './balance-sheet';
@@ -10,12 +9,6 @@ const FinancialStatementsTab = memo(function FinancialStatementsTab() {
   const params = useMemo(() => ({}), []);
 
   const {
-    data: balanceSheetData,
-    isLoading: balanceSheetLoading,
-    isError: balanceSheetError,
-    error: balanceSheetErr,
-  } = useGetBalanceSheet(params);
-  const {
     data: ledgers = [],
     isLoading: ledgersLoading,
     isError: ledgersError,
@@ -24,15 +17,7 @@ const FinancialStatementsTab = memo(function FinancialStatementsTab() {
 
   return (
     <div className="space-y-6">
-      <BalanceSheet
-        data={balanceSheetData}
-        isLoading={balanceSheetLoading}
-        error={
-          balanceSheetError
-            ? (balanceSheetErr ?? new Error('Failed to load balance sheet'))
-            : null
-        }
-      />
+      <BalanceSheet />
       <TradingAndPLAccount
         ledgers={ledgers}
         isLoading={ledgersLoading}

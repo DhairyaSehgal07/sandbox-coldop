@@ -273,13 +273,6 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
             <DetailRow label="Account" value={`#${accountNumber}`} />
           )}
           <DetailRow label="Variety" value={displayVariety} icon={Package} />
-          {(entry.from != null || entry.to != null) && (
-            <DetailRow
-              label="From → To"
-              value={`${entry.from ?? '—'} → ${entry.to ?? '—'}`}
-              icon={MapPin}
-            />
-          )}
           {entry.truckNumber?.trim() && (
             <DetailRow label="Truck No." value={entry.truckNumber.trim()} />
           )}
@@ -347,6 +340,13 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                   Entry Details
                 </h4>
                 <div className="bg-muted/30 grid w-full grid-cols-1 gap-3 rounded-lg p-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {(entry.from != null || entry.to != null) && (
+                    <DetailRow
+                      label="From → To"
+                      value={`${entry.from ?? '—'} → ${entry.to ?? '—'}`}
+                      icon={MapPin}
+                    />
+                  )}
                   <DetailRow
                     label="Created By"
                     value={entry.createdBy?.name ?? '—'}

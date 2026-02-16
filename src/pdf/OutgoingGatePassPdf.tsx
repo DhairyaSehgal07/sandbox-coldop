@@ -40,20 +40,6 @@ function formatNumber(value: number | undefined | null): string {
   return value.toLocaleString('en-IN');
 }
 
-function formatLocation(loc: {
-  chamber?: string;
-  floor?: string;
-  row?: string;
-} | undefined): string {
-  if (!loc) return '—';
-  return (
-    `${loc.chamber ?? ''}/${loc.floor ?? ''}/${loc.row ?? ''}`.replace(
-      /\/+$/,
-      ''
-    ) || '—'
-  );
-}
-
 const styles = StyleSheet.create({
   page: {
     padding: 36,
@@ -400,7 +386,6 @@ export const OutgoingGatePassPdf = memo(function OutgoingGatePassPdf({
     breakdownRowsLegacy,
     orderDetails,
     totalIssued,
-    totalAvailable,
     displayVariety,
   } = useBreakdown(entry);
 

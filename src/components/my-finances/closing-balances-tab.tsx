@@ -49,12 +49,13 @@ const formatCurrency = (amount: number) =>
     maximumFractionDigits: 2,
   });
 
+/** For Stock in Hand use closingBalance when defined (even if 0); else balance || closingBalance || 0 */
 function getDisplayBalance(ledger: Ledger): number {
   const isStockInHand = ledger.category === 'Stock in Hand';
-  if (isStockInHand && ledger.closingBalance != null) {
-    return ledger.closingBalance;
+  if (isStockInHand && ledger.closingBalance !== undefined) {
+    return ledger.closingBalance ?? 0;
   }
-  return ledger.balance ?? ledger.closingBalance ?? 0;
+  return ledger.balance || ledger.closingBalance || 0;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -110,11 +111,12 @@ const ClosingBalancesTab = memo(function ClosingBalancesTab({
   const computed = useMemo(() => {
     if (ledgers.length === 0) return null;
 
+    // Stock in Hand: use closingBalance when defined (even if 0), otherwise use balance
     const stockInHand = ledgers.find((l) => l.category === 'Stock in Hand');
     const openingStock = stockInHand?.openingBalance ?? 0;
     const closingStock =
-      stockInHand != null && stockInHand.closingBalance != null
-        ? stockInHand.closingBalance
+      stockInHand != null && stockInHand.closingBalance !== undefined
+        ? (stockInHand.closingBalance ?? 0)
         : (stockInHand?.balance ?? 0);
 
     const incomeLedgers = ledgers.filter((l) => l.type === 'Income');
@@ -135,11 +137,11 @@ const ClosingBalancesTab = memo(function ClosingBalancesTab({
     );
 
     const salesTotal = sales.reduce(
-      (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+      (s, l) => s + (l.balance || l.closingBalance || 0),
       0
     );
     const purchaseTotal = tradingExpenses.reduce(
-      (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+      (s, l) => s + (l.balance || l.closingBalance || 0),
       0
     );
 
@@ -147,11 +149,11 @@ const ClosingBalancesTab = memo(function ClosingBalancesTab({
       salesTotal + closingStock - purchaseTotal - openingStock;
 
     const indirectIncomesTotal = otherIncome.reduce(
-      (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+      (s, l) => s + (l.balance || l.closingBalance || 0),
       0
     );
     const indirectExpensesTotal = nonTradingExpenses.reduce(
-      (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+      (s, l) => s + (l.balance || l.closingBalance || 0),
       0
     );
     const netProfitLoss =
@@ -170,7 +172,14 @@ const ClosingBalancesTab = memo(function ClosingBalancesTab({
         };
       }
       categoryGroups[key].ledgers.push(ledger);
-      categoryGroups[key].total += getDisplayBalance(ledger);
+      // For Stock in Hand, use closing balance if available; else balance || closingBalance || 0
+      const isStockInHand = ledger.category === 'Stock in Hand';
+      if (isStockInHand && ledger.closingBalance !== undefined) {
+        categoryGroups[key].total += ledger.closingBalance ?? 0;
+      } else {
+        categoryGroups[key].total +=
+          ledger.balance || ledger.closingBalance || 0;
+      }
     });
 
     const groupedByType: Record<string, CategoryGroup[]> = {};
@@ -181,17 +190,24 @@ const ClosingBalancesTab = memo(function ClosingBalancesTab({
       groupedByType[group.type].push(group);
     });
 
+    // Total assets: for Stock in Hand use closing balance if available; else balance || closingBalance || 0
     const totalAssets = ledgers
       .filter((l) => l.type === 'Asset')
-      .reduce((sum, l) => sum + getDisplayBalance(l), 0);
+      .reduce((sum, l) => {
+        const isStockInHand = l.category === 'Stock in Hand';
+        if (isStockInHand && l.closingBalance !== undefined) {
+          return sum + (l.closingBalance ?? 0);
+        }
+        return sum + (l.balance || l.closingBalance || 0);
+      }, 0);
 
     const totalLiabilitiesAndEquity =
       ledgers
         .filter((l) => l.type === 'Liability')
-        .reduce((sum, l) => sum + (l.balance ?? l.closingBalance ?? 0), 0) +
+        .reduce((sum, l) => sum + (l.balance || l.closingBalance || 0), 0) +
       ledgers
         .filter((l) => l.type === 'Equity')
-        .reduce((sum, l) => sum + (l.balance ?? l.closingBalance ?? 0), 0) +
+        .reduce((sum, l) => sum + (l.balance || l.closingBalance || 0), 0) +
       netProfitLoss;
 
     const isBalanced = Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.01;
@@ -371,7 +387,7 @@ const ClosingBalancesTab = memo(function ClosingBalancesTab({
         </CardContent>
       </Card>
 
-      <Card className="border-border/40 from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 overflow-hidden bg-gradient-to-br shadow-sm">
+      <Card className="border-border/40 from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 overflow-hidden bg-linear-to-br shadow-sm">
         <CardHeader className="pb-2">
           <h3 className="font-custom text-foreground text-lg font-semibold">
             Balance Sheet Summary

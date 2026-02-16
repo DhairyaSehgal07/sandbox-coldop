@@ -9,13 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  useGetBalanceSheet,
-  type BalanceSheetBreakdownItem,
-  type BalanceSheetAssetsSection,
-  type BalanceSheetData,
-  type GetBalanceSheetParams,
-} from '@/services/accounting/useGetBalanceSheet';
+import type { Ledger } from '@/services/accounting/ledgers/useGetAllLedgers';
+import { useGetAllLedgers } from '@/services/accounting/ledgers/useGetAllLedgers';
+import type { Voucher } from '@/services/accounting/vouchers/useGetAllVouchers';
+import { useGetAllVouchers } from '@/services/accounting/vouchers/useGetAllVouchers';
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -35,134 +32,278 @@ interface BSRow {
   isProfit?: boolean;
 }
 
-/** Normalize a section (Record) into rows: supports { total, breakdown } or key-value pairs */
-function sectionToRows(
-  section: Record<string, unknown>,
-  sectionLabel: string
-): BSRow[] {
-  const rows: BSRow[] = [];
-
-  const breakdown = section.breakdown as
-    | Array<{ name: string; balance: number }>
-    | undefined;
-  const total = section.total as number | undefined;
-
-  if (Array.isArray(breakdown) && breakdown.length > 0) {
-    rows.push({ label: sectionLabel, amount: null, isHeader: true });
-    breakdown.forEach((item) => {
-      rows.push({
-        label: item.name,
-        amount: item.balance ?? 0,
-      });
-    });
-    if (typeof total === 'number') {
-      rows.push({
-        label: `Total ${sectionLabel}`,
-        amount: total,
-        isTotal: true,
-      });
-    }
-  } else if (typeof total === 'number' && Object.keys(section).length > 0) {
-    rows.push({ label: sectionLabel, amount: null, isHeader: true });
-    rows.push({
-      label: `Total ${sectionLabel}`,
-      amount: total,
-      isTotal: true,
-    });
-  } else {
-    const entries = Object.entries(section).filter(
-      (entry): entry is [string, number] =>
-        typeof entry[1] === 'number' && entry[0] !== 'total'
-    );
-    if (entries.length > 0) {
-      rows.push({ label: sectionLabel, amount: null, isHeader: true });
-      entries.forEach(([name, value]) => {
-        rows.push({ label: name, amount: value });
-      });
-    }
-  }
-
-  return rows;
-}
-
-function assetsSectionToRows(
-  section: BalanceSheetAssetsSection,
-  sectionLabel: string
-): BSRow[] {
-  const rows: BSRow[] = [];
-  rows.push({ label: sectionLabel, amount: null, isHeader: true });
-  section.breakdown.forEach((item: BalanceSheetBreakdownItem) => {
-    rows.push({ label: item.name, amount: item.balance });
-  });
-  rows.push({
-    label: `Total ${sectionLabel}`,
-    amount: section.total,
-    isTotal: true,
-  });
-  return rows;
-}
-
-function buildRowsFromData(data: BalanceSheetData): {
+/**
+ * Build balance sheet rows from ledgers and vouchers using the same logic as
+ * the reference implementation: net profit/loss from P&L, capital with
+ * movements, liabilities by subType/category, assets by subType/category
+ * (Stock in Hand uses closingBalance when defined), asset order Fixed Assets
+ * then Current Assets.
+ */
+function buildBalanceSheetRows(
+  ledgers: Ledger[],
+  vouchers: Voucher[]
+): {
   liabilityRows: BSRow[];
   assetRows: BSRow[];
   totalLiabilitiesAndEquity: number;
   totalAssets: number;
+  isBalanced: boolean;
 } {
   const liabilityRows: BSRow[] = [];
   const assetRows: BSRow[] = [];
 
-  const { assets, liabilitiesAndEquity } = data;
-  const le = liabilitiesAndEquity;
+  /* ------------------ CALCULATE NET PROFIT/LOSS ------------------ */
 
-  /* Liabilities & Equity */
-  const currentLiabilities = (le.currentLiabilities || {}) as Record<
-    string,
-    unknown
-  >;
-  const longTermLiabilities = (le.longTermLiabilities || {}) as Record<
-    string,
-    unknown
-  >;
-  const equity = (le.equity || {}) as Record<string, unknown>;
+  const stockInHand = ledgers.find((l) => l.category === 'Stock in Hand');
+  const openingStock = stockInHand?.openingBalance ?? 0;
+  const closingStock =
+    stockInHand != null && stockInHand.closingBalance !== undefined
+      ? (stockInHand.closingBalance ?? 0)
+      : (stockInHand?.balance ?? 0);
 
-  liabilityRows.push(
-    ...sectionToRows(currentLiabilities, 'Current Liabilities')
+  const incomeLedgers = ledgers.filter((l) => l.type === 'Income');
+  const expenseLedgers = ledgers.filter((l) => l.type === 'Expense');
+
+  const sales = incomeLedgers.filter((l) =>
+    l.category.toLowerCase().includes('sale')
   );
-  liabilityRows.push(
-    ...sectionToRows(longTermLiabilities, 'Long Term Liabilities')
+  const otherIncome = incomeLedgers.filter(
+    (l) => !l.category.toLowerCase().includes('sale')
   );
-  liabilityRows.push(...sectionToRows(equity, 'Equity'));
 
-  const netProfit = le.netProfit ?? 0;
-  const netLoss = le.netLoss ?? 0;
-  if (netProfit > 0) {
+  const tradingExpenses = expenseLedgers.filter(
+    (e) => e.subType === 'Direct Expenses' && e.category === 'Purchases'
+  );
+  const nonTradingExpenses = expenseLedgers.filter(
+    (e) => !(e.subType === 'Direct Expenses' && e.category === 'Purchases')
+  );
+
+  const salesTotal = sales.reduce(
+    (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+    0
+  );
+  const purchaseTotal = tradingExpenses.reduce(
+    (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+    0
+  );
+
+  const grossProfit = salesTotal + closingStock - purchaseTotal - openingStock;
+
+  const indirectIncomesTotal = otherIncome.reduce(
+    (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+    0
+  );
+  const indirectExpensesTotal = nonTradingExpenses.reduce(
+    (s, l) => s + (l.balance ?? l.closingBalance ?? 0),
+    0
+  );
+  const netProfitLoss =
+    grossProfit + indirectIncomesTotal - indirectExpensesTotal;
+
+  /* ------------------ DATA PREP ------------------ */
+
+  const equityLedgers = ledgers.filter((l) => l.type === 'Equity');
+
+  const liabilityLedgers = ledgers.filter((l) => l.type === 'Liability');
+  const liabilitySubTypes: Record<string, number> = {};
+  const liabilityCategories: Array<{
+    subType: string;
+    category: string;
+    total: number;
+  }> = [];
+
+  liabilityLedgers.forEach((ledger) => {
+    const balance = ledger.balance ?? ledger.closingBalance ?? 0;
+    liabilitySubTypes[ledger.subType] =
+      (liabilitySubTypes[ledger.subType] ?? 0) + balance;
+    const existing = liabilityCategories.find(
+      (c) => c.subType === ledger.subType && c.category === ledger.category
+    );
+    if (existing) {
+      existing.total += balance;
+    } else {
+      liabilityCategories.push({
+        subType: ledger.subType,
+        category: ledger.category,
+        total: balance,
+      });
+    }
+  });
+
+  const assetLedgers = ledgers.filter((l) => l.type === 'Asset');
+  const assetSubTypes: Record<string, number> = {};
+  const assetCategories: Array<{
+    subType: string;
+    category: string;
+    total: number;
+  }> = [];
+
+  assetLedgers.forEach((ledger) => {
+    const isStockInHand = ledger.category === 'Stock in Hand';
+    const balance =
+      isStockInHand && ledger.closingBalance !== undefined
+        ? (ledger.closingBalance ?? 0)
+        : (ledger.balance ?? ledger.closingBalance ?? 0);
+    assetSubTypes[ledger.subType] =
+      (assetSubTypes[ledger.subType] ?? 0) + balance;
+    const existing = assetCategories.find(
+      (c) => c.subType === ledger.subType && c.category === ledger.category
+    );
+    if (existing) {
+      existing.total += balance;
+    } else {
+      assetCategories.push({
+        subType: ledger.subType,
+        category: ledger.category,
+        total: balance,
+      });
+    }
+  });
+
+  /* ------------------ CAPITAL ------------------ */
+
+  if (equityLedgers.length > 0) {
     liabilityRows.push({
-      label: 'Add: Profit',
-      amount: netProfit,
-      isProfit: true,
+      label: 'CAPITAL',
+      amount: null,
+      isHeader: true,
+    });
+
+    equityLedgers.forEach((ledger) => {
+      const ledgerId = ledger._id;
+      const capitalAdditions = vouchers
+        .filter((v) => v.creditLedger._id === ledgerId)
+        .reduce((sum, v) => sum + v.amount, 0);
+      const capitalDeletions = vouchers
+        .filter((v) => v.debitLedger._id === ledgerId)
+        .reduce((sum, v) => sum + v.amount, 0);
+
+      liabilityRows.push({
+        label: `${ledger.name} - Opening Balance`,
+        amount: ledger.openingBalance ?? 0,
+      });
+
+      if (capitalAdditions > 0 || capitalDeletions > 0) {
+        const netMovement = capitalAdditions - capitalDeletions;
+        if (netMovement !== 0) {
+          liabilityRows.push({
+            label: `${ledger.name} - ${netMovement > 0 ? 'Add: Capital Introduced' : 'Less: Capital Withdrawn'}`,
+            amount: Math.abs(netMovement),
+          });
+        } else {
+          if (capitalAdditions > 0) {
+            liabilityRows.push({
+              label: `${ledger.name} - Add: Capital Introduced`,
+              amount: capitalAdditions,
+            });
+          }
+          if (capitalDeletions > 0) {
+            liabilityRows.push({
+              label: `${ledger.name} - Less: Capital Withdrawn`,
+              amount: capitalDeletions,
+            });
+          }
+        }
+      }
+    });
+
+    if (netProfitLoss !== 0) {
+      liabilityRows.push({
+        label: netProfitLoss > 0 ? 'Add: Profit' : 'Less: Loss',
+        amount: Math.abs(netProfitLoss),
+        isProfit: netProfitLoss > 0,
+      });
+    }
+
+    const totalCapital =
+      equityLedgers.reduce(
+        (sum, ledger) => sum + (ledger.balance ?? ledger.closingBalance ?? 0),
+        0
+      ) + netProfitLoss;
+
+    liabilityRows.push({
+      label: 'Total Capital',
+      amount: totalCapital,
+      isTotal: true,
     });
   }
-  if (netLoss > 0) {
+
+  /* ------------------ LIABILITIES ------------------ */
+
+  Object.entries(liabilitySubTypes).forEach(([subType, total]) => {
     liabilityRows.push({
-      label: 'Less: Loss',
-      amount: netLoss,
-      isProfit: false,
+      label: subType.toUpperCase(),
+      amount: null,
+      isHeader: true,
     });
-  }
+    liabilityCategories
+      .filter((c) => c.subType === subType)
+      .forEach((c) => {
+        liabilityRows.push({ label: c.category, amount: c.total });
+      });
+    liabilityRows.push({
+      label: `Total ${subType}`,
+      amount: total,
+      isTotal: true,
+    });
+  });
 
-  const totalLiabilitiesAndEquity = le.total ?? 0;
+  /* ------------------ ASSETS ------------------ */
 
-  /* Assets */
-  assetRows.push(...assetsSectionToRows(assets.fixedAssets, 'Fixed Assets'));
-  assetRows.push(
-    ...assetsSectionToRows(assets.currentAssets, 'Current Assets')
+  const assetSubTypeOrder = ['Fixed Assets', 'Current Assets'];
+  const sortedAssetSubTypes = Object.entries(assetSubTypes).sort(
+    ([subTypeA], [subTypeB]) => {
+      const indexA = assetSubTypeOrder.indexOf(subTypeA);
+      const indexB = assetSubTypeOrder.indexOf(subTypeB);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return 0;
+    }
   );
+
+  sortedAssetSubTypes.forEach(([subType, total]) => {
+    assetRows.push({
+      label: subType.toUpperCase(),
+      amount: null,
+      isHeader: true,
+    });
+    assetCategories
+      .filter((c) => c.subType === subType)
+      .forEach((c) => {
+        assetRows.push({ label: c.category, amount: c.total });
+      });
+    assetRows.push({
+      label: `Total ${subType}`,
+      amount: total,
+      isTotal: true,
+    });
+  });
+
+  /* ------------------ TOTALS ------------------ */
+
+  const totalEquity = equityLedgers.reduce(
+    (sum, ledger) => sum + (ledger.balance ?? ledger.closingBalance ?? 0),
+    0
+  );
+  const totalLiabilities = Object.values(liabilitySubTypes).reduce(
+    (sum, t) => sum + t,
+    0
+  );
+  const totalAssets = Object.values(assetSubTypes).reduce(
+    (sum, t) => sum + t,
+    0
+  );
+  const totalLiabilitiesAndEquity =
+    totalLiabilities + totalEquity + netProfitLoss;
+  const isBalanced = totalAssets === totalLiabilitiesAndEquity;
 
   return {
     liabilityRows,
     assetRows,
     totalLiabilitiesAndEquity,
-    totalAssets: assets.total,
+    totalAssets,
+    isBalanced,
   };
 }
 
@@ -177,10 +318,6 @@ export interface DateRange {
 
 export interface BalanceSheetProps {
   dateRange?: DateRange;
-  /** When provided, parent owns data fetching; do not fetch inside this component */
-  data?: BalanceSheetData | null;
-  isLoading?: boolean;
-  error?: Error | null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -189,28 +326,32 @@ export interface BalanceSheetProps {
 
 const BalanceSheet = memo(function BalanceSheet({
   dateRange,
-  data: dataProp,
-  isLoading: isLoadingProp,
-  error: errorProp,
 }: BalanceSheetProps) {
-  const params: GetBalanceSheetParams = useMemo(() => {
-    const p: GetBalanceSheetParams = {};
+  const params = useMemo(() => {
+    const p: { from?: string; to?: string } = {};
     if (dateRange?.from) p.from = dateRange.from;
     if (dateRange?.to) p.to = dateRange.to;
     return p;
   }, [dateRange]);
 
-  const query = useGetBalanceSheet(params);
-  const data = dataProp !== undefined ? dataProp : query.data;
-  const isLoading =
-    isLoadingProp !== undefined ? isLoadingProp : query.isLoading;
-  const isError = errorProp !== undefined ? !!errorProp : query.isError;
-  const error = errorProp !== undefined ? errorProp : query.error;
+  const ledgersQuery = useGetAllLedgers(params);
+  const vouchersQuery = useGetAllVouchers(params);
+
+  const isLoading = ledgersQuery.isLoading || vouchersQuery.isLoading;
+  const isError = ledgersQuery.isError || vouchersQuery.isError;
+  const error = ledgersQuery.error ?? vouchersQuery.error;
 
   const tableData = useMemo(() => {
-    if (!data) return null;
-    return buildRowsFromData(data);
-  }, [data]);
+    if (ledgersQuery.isLoading || vouchersQuery.isLoading) return null;
+    const list = ledgersQuery.data ?? [];
+    if (list.length === 0) return null;
+    return buildBalanceSheetRows(list, vouchersQuery.data ?? []);
+  }, [
+    ledgersQuery.isLoading,
+    vouchersQuery.isLoading,
+    ledgersQuery.data,
+    vouchersQuery.data,
+  ]);
 
   if (isLoading) {
     return (
@@ -238,7 +379,7 @@ const BalanceSheet = memo(function BalanceSheet({
     );
   }
 
-  if (!data || !tableData) {
+  if (!tableData) {
     return (
       <Card className="border-border/40 overflow-hidden shadow-sm">
         <CardContent className="flex items-center justify-center py-12">
@@ -250,10 +391,14 @@ const BalanceSheet = memo(function BalanceSheet({
     );
   }
 
-  const { liabilityRows, assetRows, totalLiabilitiesAndEquity, totalAssets } =
-    tableData;
+  const {
+    liabilityRows,
+    assetRows,
+    totalLiabilitiesAndEquity,
+    totalAssets,
+    isBalanced,
+  } = tableData;
   const maxRows = Math.max(liabilityRows.length, assetRows.length);
-  const isBalanced = totalAssets === totalLiabilitiesAndEquity;
 
   return (
     <div className="space-y-6">
@@ -331,7 +476,7 @@ const BalanceSheet = memo(function BalanceSheet({
         </CardContent>
       </Card>
 
-      <Card className="border-border/40 from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 overflow-hidden bg-gradient-to-br shadow-sm">
+      <Card className="border-border/40 from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 overflow-hidden bg-linear-to-br shadow-sm">
         <CardHeader className="pb-2">
           <h3 className="font-custom text-foreground text-lg font-semibold">
             Balance Sheet Summary
