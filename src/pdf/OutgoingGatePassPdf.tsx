@@ -11,13 +11,13 @@ import type { OutgoingGatePassEntry } from '@/services/store-admin/functions/use
 import { format } from 'date-fns';
 
 /* -------------------------------------------------
-   Colors & typography (outgoing = destructive accent)
+   Colors: only OGP # (red) and Manual # (muted) are colored; rest B&W
 ------------------------------------------------- */
 const PRIMARY = '#dc2626';
-const PRIMARY_LIGHT = '#fef2f2';
 const MUTED = '#6f6f6f';
 const BORDER = '#e5e7eb';
 const HEADER_BG = '#f9fafb';
+const TEXT = '#111';
 
 export interface ColdStoragePdfProps {
   name: string;
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     borderBottomWidth: 2,
-    borderBottomColor: PRIMARY,
+    borderBottomColor: TEXT,
     paddingBottom: 12,
     marginBottom: 16,
     alignItems: 'flex-start',
@@ -82,12 +82,12 @@ const styles = StyleSheet.create({
   headerStorageName: {
     fontSize: 14,
     fontFamily: 'Helvetica-Bold',
-    color: '#333',
+    color: TEXT,
     marginBottom: 4,
   },
   headerStorageAddress: {
     fontSize: 9,
-    color: MUTED,
+    color: TEXT,
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
-    color: MUTED,
+    color: TEXT,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 4,
@@ -126,13 +126,13 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
-    color: '#333',
+    color: TEXT,
     marginRight: 4,
   },
   detailValue: {
     fontSize: 10,
     fontFamily: 'Helvetica',
-    color: '#333',
+    color: TEXT,
     flex: 1,
   },
   table: {
@@ -155,15 +155,16 @@ const styles = StyleSheet.create({
     borderBottomColor: BORDER,
   },
   tableRowTotal: {
-    backgroundColor: PRIMARY_LIGHT,
+    backgroundColor: HEADER_BG,
     borderTopWidth: 2,
-    borderTopColor: PRIMARY,
+    borderTopColor: TEXT,
     fontFamily: 'Helvetica-Bold',
   },
   tableCell: {
     paddingHorizontal: 8,
     paddingVertical: 6,
     fontSize: 9,
+    color: TEXT,
   },
   tableCellRight: {
     textAlign: 'right',
@@ -171,19 +172,19 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
-    color: MUTED,
+    color: TEXT,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   totalText: {
     fontSize: 10,
     fontFamily: 'Helvetica-Bold',
-    color: PRIMARY,
+    color: TEXT,
   },
   summaryBox: {
-    backgroundColor: PRIMARY_LIGHT,
+    backgroundColor: HEADER_BG,
     borderLeftWidth: 4,
-    borderLeftColor: PRIMARY,
+    borderLeftColor: BORDER,
     padding: 12,
     marginBottom: 16,
     flexDirection: 'row',
@@ -196,12 +197,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 10,
-    color: MUTED,
+    color: TEXT,
   },
   summaryValue: {
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
-    color: '#333',
+    color: TEXT,
   },
   remarksBox: {
     backgroundColor: HEADER_BG,
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
   },
   remarksText: {
     fontSize: 10,
-    color: '#333',
+    color: TEXT,
   },
   footer: {
     position: 'absolute',
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 8,
-    color: MUTED,
+    color: TEXT,
   },
 });
 
@@ -403,7 +404,7 @@ export const OutgoingGatePassPdf = memo(function OutgoingGatePassPdf({
     displayVariety,
   } = useBreakdown(entry);
 
-  const newColWidths = ['25%', '25%', '20%', '30%'];
+  const newColWidths = ['33%', '33%', '34%'];
   const hasBreakdown =
     breakdownRowsNew.length > 0 ||
     breakdownRowsLegacy.length > 0 ||
@@ -490,17 +491,13 @@ export const OutgoingGatePassPdf = memo(function OutgoingGatePassPdf({
               <View style={[styles.tableRow, styles.tableRowHeader]}>
                 <Text style={[styles.tableCell, styles.headerText, { width: newColWidths[0] }]}>Type</Text>
                 <Text style={[styles.tableCell, styles.headerText, { width: newColWidths[1] }]}>Variety</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: newColWidths[2] }]}>Ref</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: newColWidths[3] }]}>Issued</Text>
+                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: newColWidths[2] }]}>Issued</Text>
               </View>
               {breakdownRowsNew.map((row, idx) => (
                 <View key={idx} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { width: newColWidths[0] }]}>{row.size}</Text>
                   <Text style={[styles.tableCell, { width: newColWidths[1] }]}>{row.variety}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellRight, { width: newColWidths[2] }]}>
-                    {typeof row.refNo === 'number' ? `#${row.refNo}` : row.refNo}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: newColWidths[3] }]}>
+                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: newColWidths[2] }]}>
                     {row.issuedQty.toLocaleString('en-IN')}
                   </Text>
                 </View>
@@ -508,8 +505,7 @@ export const OutgoingGatePassPdf = memo(function OutgoingGatePassPdf({
               <View style={[styles.tableRow, styles.tableRowTotal]}>
                 <Text style={[styles.tableCell, styles.totalText, { width: newColWidths[0] }]}>Total</Text>
                 <Text style={[styles.tableCell, { width: newColWidths[1] }]} />
-                <Text style={[styles.tableCell, { width: newColWidths[2] }]} />
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: newColWidths[3] }]}>
+                <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: newColWidths[2] }]}>
                   {totalIssued.toLocaleString('en-IN')}
                 </Text>
               </View>
@@ -517,96 +513,55 @@ export const OutgoingGatePassPdf = memo(function OutgoingGatePassPdf({
           ) : breakdownRowsLegacy.length > 0 ? (
             <>
               <View style={[styles.tableRow, styles.tableRowHeader]}>
-                <Text style={[styles.tableCell, styles.headerText, { width: '14%' }]}>Type</Text>
-                <Text style={[styles.tableCell, styles.headerText, { width: '14%' }]}>Variety</Text>
-                <Text style={[styles.tableCell, styles.headerText, { width: '16%' }]}>Location</Text>
-                <Text style={[styles.tableCell, styles.headerText, { width: '12%' }]}>Ref</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '12%' }]}>Init</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '14%' }]}>Issued</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '18%' }]}>Avail</Text>
+                <Text style={[styles.tableCell, styles.headerText, { width: '25%' }]}>Type</Text>
+                <Text style={[styles.tableCell, styles.headerText, { width: '25%' }]}>Variety</Text>
+                <Text style={[styles.tableCell, styles.headerText, { width: '25%' }]}>Location</Text>
+                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '25%' }]}>Issued</Text>
               </View>
               {breakdownRowsLegacy.map((row, idx) => (
                 <View key={idx} style={styles.tableRow}>
-                  <Text style={[styles.tableCell, { width: '14%' }]}>{row.size}</Text>
-                  <Text style={[styles.tableCell, { width: '14%' }]}>{row.variety}</Text>
-                  <Text style={[styles.tableCell, { width: '16%' }]}>{row.location}</Text>
-                  <Text style={[styles.tableCell, { width: '12%' }]}>#{row.refNo}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellRight, { width: '12%' }]}>
-                    {row.initialQty.toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '14%' }]}>
+                  <Text style={[styles.tableCell, { width: '25%' }]}>{row.size}</Text>
+                  <Text style={[styles.tableCell, { width: '25%' }]}>{row.variety}</Text>
+                  <Text style={[styles.tableCell, { width: '25%' }]}>{row.location}</Text>
+                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '25%' }]}>
                     {row.issuedQty.toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.tableCellRight, { width: '18%' }]}>
-                    {row.availableQty.toLocaleString('en-IN')}
                   </Text>
                 </View>
               ))}
               <View style={[styles.tableRow, styles.tableRowTotal]}>
-                <Text style={[styles.tableCell, styles.totalText, { width: '14%' }]}>Total</Text>
-                <Text style={[styles.tableCell, { width: '14%' }]} />
-                <Text style={[styles.tableCell, { width: '16%' }]} />
-                <Text style={[styles.tableCell, { width: '12%' }]} />
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '12%' }]}>
-                  {(totalAvailable + totalIssued).toLocaleString('en-IN')}
-                </Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '14%' }]}>
+                <Text style={[styles.tableCell, styles.totalText, { width: '25%' }]}>Total</Text>
+                <Text style={[styles.tableCell, { width: '25%' }]} />
+                <Text style={[styles.tableCell, { width: '25%' }]} />
+                <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '25%' }]}>
                   {totalIssued.toLocaleString('en-IN')}
-                </Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '18%' }]}>
-                  {totalAvailable.toLocaleString('en-IN')}
                 </Text>
               </View>
             </>
           ) : (
             <>
               <View style={[styles.tableRow, styles.tableRowHeader]}>
-                <Text style={[styles.tableCell, styles.headerText, { width: '14%' }]}>Type</Text>
-                <Text style={[styles.tableCell, styles.headerText, { width: '14%' }]}>Variety</Text>
-                <Text style={[styles.tableCell, styles.headerText, { width: '16%' }]}>Location</Text>
-                <Text style={[styles.tableCell, styles.headerText, { width: '12%' }]}>Ref</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '12%' }]}>Init</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '14%' }]}>Issued</Text>
-                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '18%' }]}>Avail</Text>
+                <Text style={[styles.tableCell, styles.headerText, { width: '25%' }]}>Type</Text>
+                <Text style={[styles.tableCell, styles.headerText, { width: '25%' }]}>Variety</Text>
+                <Text style={[styles.tableCell, styles.headerText, { width: '25%' }]}>Location</Text>
+                <Text style={[styles.tableCell, styles.tableCellRight, styles.headerText, { width: '25%' }]}>Issued</Text>
               </View>
-              {orderDetails.map((od, idx) => {
-                const initialQty =
-                  (od.quantityAvailable ?? 0) + (od.quantityIssued ?? 0);
-                const ref = od.incomingGatePassNo ?? od.gatePassNumber ?? '—';
-                return (
-                  <View key={idx} style={styles.tableRow}>
-                    <Text style={[styles.tableCell, { width: '14%' }]}>{od.size ?? '—'}</Text>
-                    <Text style={[styles.tableCell, { width: '14%' }]}>—</Text>
-                    <Text style={[styles.tableCell, { width: '16%' }]}>—</Text>
-                    <Text style={[styles.tableCell, { width: '12%' }]}>
-                      {typeof ref === 'number' ? `#${ref}` : ref}
-                    </Text>
-                    <Text style={[styles.tableCell, styles.tableCellRight, { width: '12%' }]}>
-                      {initialQty.toLocaleString('en-IN')}
-                    </Text>
-                    <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '14%' }]}>
-                      {(od.quantityIssued ?? 0).toLocaleString('en-IN')}
-                    </Text>
-                    <Text style={[styles.tableCell, styles.tableCellRight, { width: '18%' }]}>
-                      {(od.quantityAvailable ?? 0).toLocaleString('en-IN')}
-                    </Text>
-                  </View>
-                );
-              })}
+              {orderDetails.map((od, idx) => (
+                <View key={idx} style={styles.tableRow}>
+                  <Text style={[styles.tableCell, { width: '25%' }]}>{od.size ?? '—'}</Text>
+                  <Text style={[styles.tableCell, { width: '25%' }]}>—</Text>
+                  <Text style={[styles.tableCell, { width: '25%' }]}>—</Text>
+                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '25%' }]}>
+                    {(od.quantityIssued ?? 0).toLocaleString('en-IN')}
+                  </Text>
+                </View>
+              ))}
               {orderDetails.length > 0 && (
                 <View style={[styles.tableRow, styles.tableRowTotal]}>
-                  <Text style={[styles.tableCell, styles.totalText, { width: '14%' }]}>Total</Text>
-                  <Text style={[styles.tableCell, { width: '14%' }]} />
-                  <Text style={[styles.tableCell, { width: '16%' }]} />
-                  <Text style={[styles.tableCell, { width: '12%' }]} />
-                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '12%' }]}>
-                    {(totalAvailable + totalIssued).toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '14%' }]}>
+                  <Text style={[styles.tableCell, styles.totalText, { width: '25%' }]}>Total</Text>
+                  <Text style={[styles.tableCell, { width: '25%' }]} />
+                  <Text style={[styles.tableCell, { width: '25%' }]} />
+                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '25%' }]}>
                     {totalIssued.toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.tableCellRight, styles.totalText, { width: '18%' }]}>
-                    {totalAvailable.toLocaleString('en-IN')}
                   </Text>
                 </View>
               )}
