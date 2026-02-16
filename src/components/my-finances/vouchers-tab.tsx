@@ -60,8 +60,11 @@ const VoucherTab = memo(function VoucherTab() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Backend expects ISO date-time (e.g. 2025-02-16T00:00:00.000Z); input type="date" gives YYYY-MM-DD
+    const dateIso =
+      form.date.includes('T') ? form.date : `${form.date}T00:00:00.000Z`;
     const payload: CreateVoucherBody = {
-      date: form.date,
+      date: dateIso,
       debitLedger: form.debitLedger,
       creditLedger: form.creditLedger,
       amount: Number(form.amount),
