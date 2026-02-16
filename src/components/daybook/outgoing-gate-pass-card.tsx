@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import {
   ChevronDown,
   ChevronUp,
-  Loader2,
   Pencil,
   Printer,
   User,
@@ -16,8 +15,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { Spinner } from '@/components/ui/spinner';
 import { DetailRow } from './detail-row';
-import { openGatePassPdfInNewTab } from './gate-pass-pdf';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 
 interface OutgoingGatePassCardProps {
@@ -36,26 +35,38 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const handlePrintPdf = async () => {
+    // Open window synchronously so mobile popup blockers allow it
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(
+        '<html><body style="font-family:sans-serif;padding:2rem;text-align:center;color:#666;">Generating PDF…</body></html>'
+      );
+    }
     setIsGeneratingPdf(true);
-    const start = Date.now();
     try {
-      await openGatePassPdfInNewTab('outgoing');
+      const [{ pdf }, { OutgoingGatePassPdf }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/pdf/OutgoingGatePassPdf'),
+      ]);
+      const blob = await pdf(<OutgoingGatePassPdf />).toBlob();
+      const url = URL.createObjectURL(blob);
+      if (printWindow) {
+        printWindow.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
       toast.success('PDF opened in new tab', {
         duration: 3000,
         description: 'Your gate pass is ready to view or print.',
       });
     } catch {
+      if (printWindow) printWindow.close();
       toast.error('Could not generate PDF', {
         description: 'Please try again.',
       });
     } finally {
-      const elapsed = Date.now() - start;
-      const minLoaderMs = 400;
-      if (elapsed < minLoaderMs) {
-        setTimeout(() => setIsGeneratingPdf(false), minLoaderMs - elapsed);
-      } else {
-        setIsGeneratingPdf(false);
-      }
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -298,17 +309,13 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 transition-opacity duration-200"
-              aria-label={isGeneratingPdf ? 'Generating PDF…' : 'Print gate pass'}
-              aria-busy={isGeneratingPdf}
+              onClick={handlePrintPdf}
               disabled={isGeneratingPdf}
-              onClick={() => void handlePrintPdf()}
+              className="h-8 w-8 p-0"
+              aria-label={isGeneratingPdf ? 'Generating PDF…' : 'Print gate pass'}
             >
               {isGeneratingPdf ? (
-                <Loader2
-                  className="h-3.5 w-3.5 animate-spin text-primary"
-                  aria-hidden
-                />
+                <Spinner className="h-3.5 w-3.5" />
               ) : (
                 <Printer className="h-3.5 w-3.5" />
               )}
