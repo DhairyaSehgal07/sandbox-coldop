@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 
 import {
   Item,
@@ -9,14 +9,22 @@ import {
 } from '@/components/ui/item';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Package, RefreshCw, Wheat, Ruler } from 'lucide-react';
 import { useGetStorageSummary } from '@/services/analytics/useGetStorageSummary';
 import { StorageSummaryTable } from '@/components/analytics/storage-summary-table';
 import { useStore } from '@/stores/store';
+import CapacityUtilisation from './capacity-utilisation';
+import SizeDistributionChart from './size-distribution-chart';
+import VarietyDistribution from './variety-distribution';
+
+type AnalyticsMode = 'current' | 'initial' | 'outgoing';
 
 const AnalyticsPage = memo(function AnalyticsPage() {
+  const [mode, setMode] = useState<AnalyticsMode>('current');
   const { data, isLoading, error, refetch, isFetching } =
     useGetStorageSummary();
+  const totalCapacity = useStore((s) => s.coldStorage?.capacity);
   const preferenceSizes = useStore(
     (s) => s.preferences?.commodities?.[0]?.sizes ?? []
   );
@@ -36,6 +44,122 @@ const AnalyticsPage = memo(function AnalyticsPage() {
     }
     return ordered;
   }, [data?.chartData?.sizes, preferenceSizes]);
+
+  /** Top variety by initial quantity (from stockSummary when mode is initial). */
+  const topVarietyByInitial = useMemo(() => {
+    const summary = data?.stockSummary;
+    if (!summary?.length) return null;
+    let top: { variety: string; initialQuantity: number } | null = null;
+    for (const row of summary) {
+      const sum = row.sizes.reduce((a, s) => a + s.initialQuantity, 0);
+      if (sum > 0 && (!top || sum > top.initialQuantity)) {
+        top = { variety: row.variety, initialQuantity: sum };
+      }
+    }
+    return top;
+  }, [data]);
+
+  /** Top size by initial quantity (from stockSummary when mode is initial). */
+  const topSizeByInitial = useMemo(() => {
+    const summary = data?.stockSummary;
+    if (!summary?.length) return null;
+    const bySize = new Map<string, number>();
+    for (const row of summary) {
+      for (const s of row.sizes) {
+        bySize.set(s.size, (bySize.get(s.size) ?? 0) + s.initialQuantity);
+      }
+    }
+    let top: { size: string; initialQuantity: number } | null = null;
+    for (const [size, qty] of bySize) {
+      if (qty > 0 && (!top || qty > top.initialQuantity)) {
+        top = { size, initialQuantity: qty };
+      }
+    }
+    return top;
+  }, [data]);
+
+  /** Top variety by outgoing (initial - current) from stockSummary. */
+  const topVarietyByOutgoing = useMemo(() => {
+    const summary = data?.stockSummary;
+    if (!summary?.length) return null;
+    let top: { variety: string; outgoingQuantity: number } | null = null;
+    for (const row of summary) {
+      const sum = row.sizes.reduce(
+        (a, s) => a + Math.max(0, s.initialQuantity - s.currentQuantity),
+        0
+      );
+      if (sum > 0 && (!top || sum > top.outgoingQuantity)) {
+        top = { variety: row.variety, outgoingQuantity: sum };
+      }
+    }
+    return top;
+  }, [data]);
+
+  /** Top size by outgoing (initial - current) from stockSummary. */
+  const topSizeByOutgoing = useMemo(() => {
+    const summary = data?.stockSummary;
+    if (!summary?.length) return null;
+    const bySize = new Map<string, number>();
+    for (const row of summary) {
+      for (const s of row.sizes) {
+        const out = Math.max(0, s.initialQuantity - s.currentQuantity);
+        bySize.set(s.size, (bySize.get(s.size) ?? 0) + out);
+      }
+    }
+    let top: { size: string; outgoingQuantity: number } | null = null;
+    for (const [size, qty] of bySize) {
+      if (qty > 0 && (!top || qty > top.outgoingQuantity)) {
+        top = { size, outgoingQuantity: qty };
+      }
+    }
+    return top;
+  }, [data]);
+
+  const totalInventory =
+    mode === 'current'
+      ? (data?.totalInventory.current ?? 0)
+      : mode === 'initial'
+        ? (data?.totalInventory.initial ?? 0)
+        : Math.max(
+            0,
+            (data?.totalInventory.initial ?? 0) -
+              (data?.totalInventory.current ?? 0)
+          );
+
+  /** Normalized to { variety, quantity } for display. */
+  const topVarietyDisplay =
+    mode === 'current' && data?.topVariety
+      ? {
+          variety: data.topVariety.variety,
+          quantity: data.topVariety.currentQuantity,
+        }
+      : mode === 'initial' && topVarietyByInitial
+        ? {
+            variety: topVarietyByInitial.variety,
+            quantity: topVarietyByInitial.initialQuantity,
+          }
+        : mode === 'outgoing' && topVarietyByOutgoing
+          ? {
+              variety: topVarietyByOutgoing.variety,
+              quantity: topVarietyByOutgoing.outgoingQuantity,
+            }
+          : null;
+
+  /** Normalized to { size, quantity } for display. */
+  const topSizeDisplay =
+    mode === 'current' && data?.topSize
+      ? { size: data.topSize.size, quantity: data.topSize.currentQuantity }
+      : mode === 'initial' && topSizeByInitial
+        ? {
+            size: topSizeByInitial.size,
+            quantity: topSizeByInitial.initialQuantity,
+          }
+        : mode === 'outgoing' && topSizeByOutgoing
+          ? {
+              size: topSizeByOutgoing.size,
+              quantity: topSizeByOutgoing.outgoingQuantity,
+            }
+          : null;
 
   return (
     <main className="mx-auto max-w-7xl p-2 sm:p-4 lg:p-6">
@@ -72,7 +196,7 @@ const AnalyticsPage = memo(function AnalyticsPage() {
         {/* Content */}
         <div className="min-h-[200px] w-full">
           {isLoading ? (
-            <p className="font-custom text-sm text-gray-600">
+            <p className="font-custom text-muted-foreground text-sm">
               Loading storage summary…
             </p>
           ) : error ? (
@@ -83,82 +207,110 @@ const AnalyticsPage = memo(function AnalyticsPage() {
             </p>
           ) : data ? (
             <div className="space-y-6">
-              {/* Stats: Total inventory, Top variety, Top size */}
+              {/* Mode tabs: Current | Initial */}
+              <Tabs
+                value={mode}
+                onValueChange={(v) => setMode(v as AnalyticsMode)}
+              >
+                <TabsList className="font-custom grid h-9 w-full grid-cols-3">
+                  <TabsTrigger value="current">Current</TabsTrigger>
+                  <TabsTrigger value="initial">Initial</TabsTrigger>
+                  <TabsTrigger value="outgoing">Outgoing</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* Stats: Total inventory, Top variety, Top size (driven by tab) */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Card className="border-border rounded-xl shadow-sm">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
-                      Total inventory (initial)
-                    </CardTitle>
-                    <Package className="text-muted-foreground h-4 w-4" />
-                  </CardHeader>
-                  <CardContent>
-                    <p className="font-custom text-2xl font-bold text-[#333] tabular-nums">
-                      {data.totalInventory.initial.toLocaleString('en-IN')}
-                    </p>
-                    <p className="font-custom text-muted-foreground text-xs">
-                      Bags received
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="border-border rounded-xl shadow-sm">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
-                      Total inventory (current)
+                    <CardTitle className="font-custom text-muted-foreground text-sm font-medium">
+                      Total inventory ({mode})
                     </CardTitle>
                     <Package className="text-primary h-4 w-4" />
                   </CardHeader>
                   <CardContent>
                     <p className="font-custom text-primary text-2xl font-bold tabular-nums">
-                      {data.totalInventory.current.toLocaleString('en-IN')}
+                      {totalInventory.toLocaleString('en-IN')}
                     </p>
                     <p className="font-custom text-muted-foreground text-xs">
-                      Bags in storage
+                      {mode === 'current'
+                        ? 'Bags in storage'
+                        : mode === 'initial'
+                          ? 'Bags received'
+                          : 'Bags released'}
                     </p>
                   </CardContent>
                 </Card>
                 <Card className="border-border rounded-xl shadow-sm">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
+                    <CardTitle className="font-custom text-muted-foreground text-sm font-medium">
                       Top variety
                     </CardTitle>
                     <Wheat className="text-muted-foreground h-4 w-4" />
                   </CardHeader>
                   <CardContent>
-                    <p className="font-custom text-lg font-semibold text-[#333]">
-                      {data.topVariety?.variety ?? '—'}
+                    <p className="font-custom text-foreground text-lg font-semibold">
+                      {topVarietyDisplay?.variety ?? '—'}
                     </p>
                     <p className="font-custom text-muted-foreground text-xs tabular-nums">
-                      {data.topVariety != null
-                        ? `${data.topVariety.currentQuantity.toLocaleString('en-IN')} bags`
+                      {topVarietyDisplay != null
+                        ? `${topVarietyDisplay.quantity.toLocaleString('en-IN')} bags`
                         : 'No data'}
                     </p>
                   </CardContent>
                 </Card>
                 <Card className="border-border rounded-xl shadow-sm">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="font-custom text-sm font-medium text-gray-600">
+                    <CardTitle className="font-custom text-muted-foreground text-sm font-medium">
                       Top bag size
                     </CardTitle>
                     <Ruler className="text-muted-foreground h-4 w-4" />
                   </CardHeader>
                   <CardContent>
-                    <p className="font-custom text-lg font-semibold text-[#333]">
-                      {data.topSize?.size ?? '—'}
+                    <p className="font-custom text-foreground text-lg font-semibold">
+                      {topSizeDisplay?.size ?? '—'}
                     </p>
                     <p className="font-custom text-muted-foreground text-xs tabular-nums">
-                      {data.topSize != null
-                        ? `${data.topSize.currentQuantity.toLocaleString('en-IN')} bags`
+                      {topSizeDisplay != null
+                        ? `${topSizeDisplay.quantity.toLocaleString('en-IN')} bags`
                         : 'No data'}
                     </p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Summary table */}
+              {/* Summary table (synced with page tab) */}
               <StorageSummaryTable
                 stockSummary={data.stockSummary}
                 sizes={sizesForTable}
+                controlledTab={mode}
+              />
+
+              <CapacityUtilisation
+                currentQuantity={
+                  mode === 'current'
+                    ? data.totalInventory.current
+                    : mode === 'initial'
+                      ? data.totalInventory.initial
+                      : Math.max(
+                          0,
+                          data.totalInventory.initial -
+                            data.totalInventory.current
+                        )
+                }
+                totalCapacity={totalCapacity}
+                totalCurrentInventory={data.totalInventory.current}
+                quantityType={mode}
+              />
+
+              <VarietyDistribution
+                stockSummary={data.stockSummary}
+                quantityType={mode}
+              />
+
+              <SizeDistributionChart
+                stockSummary={data.stockSummary}
+                quantityType={mode}
               />
             </div>
           ) : null}

@@ -40,9 +40,13 @@ export interface StorageSummaryTableProps {
   stockSummary: VarietyStockSummary[];
   /** Size column headers in display order */
   sizes: string[];
+  /** When set, table shows only this mode and the tab row is hidden (e.g. when page-level tabs control the mode). */
+  controlledTab?: 'current' | 'initial' | 'outgoing';
 }
 
-function buildSizeMap(sizes: SizeQuantity[]): Map<string, { initial: number; current: number }> {
+function buildSizeMap(
+  sizes: SizeQuantity[]
+): Map<string, { initial: number; current: number }> {
   const map = new Map<string, { initial: number; current: number }>();
   for (const s of sizes) {
     map.set(s.size, {
@@ -56,8 +60,10 @@ function buildSizeMap(sizes: SizeQuantity[]): Map<string, { initial: number; cur
 export function StorageSummaryTable({
   stockSummary,
   sizes,
+  controlledTab,
 }: StorageSummaryTableProps) {
-  const [activeTab, setActiveTab] = useState<TabMode>('current');
+  const [internalTab, setInternalTab] = useState<TabMode>('current');
+  const activeTab = controlledTab ?? internalTab;
 
   const { rows, totals, tabTotals } = useMemo(() => {
     const rowsData: TableRowData[] = [];
@@ -103,9 +109,7 @@ export function StorageSummaryTable({
     const cols: ColumnDef<TableRowData>[] = [
       {
         accessorKey: 'variety',
-        header: () => (
-          <span className="font-custom font-bold">Varieties</span>
-        ),
+        header: () => <span className="font-custom font-bold">Varieties</span>,
         cell: ({ getValue }) => (
           <span className="font-custom font-medium">
             {getValue() as string}
@@ -117,11 +121,9 @@ export function StorageSummaryTable({
       cols.push({
         id: size,
         accessorFn: (row) => row.values[size] ?? 0,
-        header: () => (
-          <span className="font-custom font-bold">{size}</span>
-        ),
+        header: () => <span className="font-custom font-bold">{size}</span>,
         cell: ({ getValue }) => (
-          <span className="font-custom tabular-nums font-medium">
+          <span className="font-custom font-medium tabular-nums">
             {Number(getValue()).toLocaleString('en-IN')}
           </span>
         ),
@@ -129,11 +131,9 @@ export function StorageSummaryTable({
     }
     cols.push({
       accessorKey: 'total',
-      header: () => (
-        <span className="font-custom font-bold">Total</span>
-      ),
+      header: () => <span className="font-custom font-bold">Total</span>,
       cell: ({ getValue }) => (
-        <span className="font-custom text-primary tabular-nums font-bold">
+        <span className="font-custom text-primary font-bold tabular-nums">
           {Number(getValue()).toLocaleString('en-IN')}
         </span>
       ),
@@ -174,37 +174,45 @@ export function StorageSummaryTable({
             <h2 className="font-custom text-xl font-bold tracking-tight sm:text-2xl">
               Stock Summary
             </h2>
-            <p className="font-custom text-muted-foreground mt-1 text-sm">
-              View stock by current inventory, initial quantities, or outgoing
-              quantities.
-            </p>
+            {controlledTab == null ? (
+              <p className="font-custom text-muted-foreground mt-1 text-sm">
+                View stock by current inventory, initial quantities, or outgoing
+                quantities.
+              </p>
+            ) : (
+              <p className="font-custom text-muted-foreground mt-1 text-sm">
+                Showing {controlledTab} quantities.
+              </p>
+            )}
           </div>
-          <div className="border-border flex gap-1 border-b">
-            {TAB_CONFIG.map(({ id, label }) => {
-              const count =
-                id === 'current'
-                  ? tabTotals.current
-                  : id === 'initial'
-                    ? tabTotals.initial
-                    : tabTotals.outgoing;
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setActiveTab(id)}
-                  className={cn(
-                    'font-custom focus-visible:ring-primary border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-                    isActive
-                      ? 'border-primary text-primary'
-                      : 'text-muted-foreground border-transparent hover:text-foreground'
-                  )}
-                >
-                  {label} ({count.toLocaleString('en-IN')})
-                </button>
-              );
-            })}
-          </div>
+          {controlledTab == null && (
+            <div className="border-border flex gap-1 border-b">
+              {TAB_CONFIG.map(({ id, label }) => {
+                const count =
+                  id === 'current'
+                    ? tabTotals.current
+                    : id === 'initial'
+                      ? tabTotals.initial
+                      : tabTotals.outgoing;
+                const isActive = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setInternalTab(id)}
+                    className={cn(
+                      'font-custom focus-visible:ring-primary border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                      isActive
+                        ? 'border-primary text-primary'
+                        : 'text-muted-foreground hover:text-foreground border-transparent'
+                    )}
+                  >
+                    {label} ({count.toLocaleString('en-IN')})
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="border-border overflow-x-auto rounded-lg border">
           <Table className="border-collapse">
