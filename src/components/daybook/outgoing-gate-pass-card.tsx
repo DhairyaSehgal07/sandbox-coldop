@@ -7,14 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import {
   ChevronDown,
   ChevronUp,
+  Loader2,
   Pencil,
   Printer,
   User,
   Package,
   MapPin,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DetailRow } from './detail-row';
+import { openGatePassPdfInNewTab } from './gate-pass-pdf';
 import type { DaybookEntry } from '@/services/store-admin/functions/useGetDaybook';
 
 interface OutgoingGatePassCardProps {
@@ -30,6 +33,31 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
   entry,
 }: OutgoingGatePassCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const handlePrintPdf = async () => {
+    setIsGeneratingPdf(true);
+    const start = Date.now();
+    try {
+      await openGatePassPdfInNewTab('outgoing');
+      toast.success('PDF opened in new tab', {
+        duration: 3000,
+        description: 'Your gate pass is ready to view or print.',
+      });
+    } catch {
+      toast.error('Could not generate PDF', {
+        description: 'Please try again.',
+      });
+    } finally {
+      const elapsed = Date.now() - start;
+      const minLoaderMs = 400;
+      if (elapsed < minLoaderMs) {
+        setTimeout(() => setIsGeneratingPdf(false), minLoaderMs - elapsed);
+      } else {
+        setIsGeneratingPdf(false);
+      }
+    }
+  };
 
   const farmer = entry.farmerStorageLinkId?.farmerId;
   const farmerName = farmer?.name ?? '—';
@@ -270,11 +298,20 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.print()}
-              className="h-8 w-8 p-0"
-              aria-label="Print gate pass"
+              className="h-8 w-8 p-0 transition-opacity duration-200"
+              aria-label={isGeneratingPdf ? 'Generating PDF…' : 'Print gate pass'}
+              aria-busy={isGeneratingPdf}
+              disabled={isGeneratingPdf}
+              onClick={() => void handlePrintPdf()}
             >
-              <Printer className="h-3.5 w-3.5" />
+              {isGeneratingPdf ? (
+                <Loader2
+                  className="h-3.5 w-3.5 animate-spin text-primary"
+                  aria-hidden
+                />
+              ) : (
+                <Printer className="h-3.5 w-3.5" />
+              )}
             </Button>
           </div>
         </div>
