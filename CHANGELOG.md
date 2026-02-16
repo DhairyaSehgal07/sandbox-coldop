@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-02-16
+
+### Added
+- Daybook: support for new outgoing API shape `incomingGatePassEntries` (per-incoming variety and allocations: size + quantity) alongside legacy `incomingGatePassSnapshots`
+- Outgoing gate pass card: variety shown from incoming entries or snapshots; breakdown table supports both new allocations and legacy snapshot/location rows
+- Daybook types: `DaybookOutgoingIncomingEntry`, `DaybookOutgoingAllocation`; `DaybookIncomingGatePassSnapshot` now includes optional `variety`
+
+### Changed
+- Outgoing gate pass create API: variety moved to per–incoming gate pass entry; allocations simplified to size + quantity only (no bagIndex or location); removed top-level variety and truckNumber from request body
+- Outgoing form: refactored to use per-incoming variety and simplified allocation structure; variety options derived from selected incoming gate passes
+- Incoming form and summary sheet: minor updates (gate pass number and location auto-uppercase, bag quantity input behavior)
+
 ## [0.17.0] - 2026-02-16
 
 ### Added

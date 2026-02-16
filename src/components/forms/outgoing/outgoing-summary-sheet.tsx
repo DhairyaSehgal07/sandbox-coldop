@@ -125,8 +125,16 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                   icon={Calendar}
                 />
                 <SummaryMetaRow
-                  label="Variety"
-                  value={pendingPayload.variety || '—'}
+                  label="Varieties"
+                  value={
+                    [
+                      ...new Set(
+                        pendingPayload.incomingGatePasses
+                          .map((e) => e.variety?.trim())
+                          .filter(Boolean)
+                      ),
+                    ].join(', ') || '—'
+                  }
                   icon={Package}
                 />
                 <SummaryMetaRow
@@ -138,12 +146,6 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                   }
                   icon={Truck}
                 />
-                {pendingPayload.truckNumber?.trim() && (
-                  <SummaryMetaRow
-                    label="Truck Number"
-                    value={pendingPayload.truckNumber.trim()}
-                  />
-                )}
                 <span className="font-custom text-primary text-sm font-semibold">
                   {totalBags} bag{totalBags !== 1 ? 's' : ''}
                 </span>
@@ -168,6 +170,11 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                           <div>
                             <p className="font-custom text-base font-bold text-white">
                               Incoming voucher #{idx + 1}
+                              {entry.variety?.trim() && (
+                                <span className="font-custom ml-2 font-normal text-zinc-400">
+                                  ({entry.variety.trim()})
+                                </span>
+                              )}
                             </p>
                             <p className="font-custom mt-0.5 text-xs text-zinc-400">
                               {entryBags} bag
@@ -182,51 +189,24 @@ export const OutgoingSummarySheet = memo(function OutgoingSummarySheet({
                                 <th className="border-b border-zinc-600/50 py-2 pr-3 text-left text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
                                   Size
                                 </th>
-                                <th className="border-b border-zinc-600/50 px-2 py-2 text-left text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
-                                  Location
-                                </th>
                                 <th className="border-b border-zinc-600/50 px-2 py-2 text-right text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
                                   Allocated
                                 </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {entry.allocations.map((alloc, allocIdx) => {
-                                const allocWithLocation = alloc as {
-                                  size: string;
-                                  quantityToAllocate: number;
-                                  bagIndex?: number;
-                                  location?: {
-                                    chamber?: string;
-                                    floor?: string;
-                                    row?: string;
-                                  };
-                                };
-                                const loc = allocWithLocation.location;
-                                const locationStr =
-                                  loc && (loc.chamber ?? loc.floor ?? loc.row)
-                                    ? [loc.chamber, loc.floor, loc.row]
-                                        .filter(Boolean)
-                                        .join(' ')
-                                    : '—';
-                                return (
-                                  <tr
-                                    key={`${alloc.size}-${allocWithLocation.bagIndex ?? allocIdx}`}
-                                  >
-                                    <td className="border-b border-zinc-600/40 py-2 pr-3 font-medium text-white">
-                                      {alloc.size}
-                                    </td>
-                                    <td className="border-b border-zinc-600/40 px-2 py-2 text-zinc-300">
-                                      {locationStr}
-                                    </td>
-                                    <td className="text-primary border-b border-zinc-600/40 px-2 py-2 text-right font-medium">
-                                      {Number(alloc.quantityToAllocate).toFixed(
-                                        1
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
+                              {entry.allocations.map((alloc, allocIdx) => (
+                                <tr key={`${alloc.size}-${allocIdx}`}>
+                                  <td className="border-b border-zinc-600/40 py-2 pr-3 font-medium text-white">
+                                    {alloc.size}
+                                  </td>
+                                  <td className="text-primary border-b border-zinc-600/40 px-2 py-2 text-right font-medium">
+                                    {Number(alloc.quantityToAllocate).toFixed(
+                                      1
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         </div>

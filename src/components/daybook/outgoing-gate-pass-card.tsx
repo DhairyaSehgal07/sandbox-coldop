@@ -40,14 +40,73 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
     [entry.orderDetails]
   );
 
+  const incomingEntries = useMemo(
+    () => entry.incomingGatePassEntries ?? [],
+    [entry.incomingGatePassEntries]
+  );
+
+  /** Display variety: from new API or snapshots (comma-separated unique) or legacy top-level. */
+  const displayVariety = useMemo(() => {
+    if (incomingEntries.length > 0) {
+      const varieties = [
+        ...new Set(
+          incomingEntries
+            .map((e) => e.variety?.trim())
+            .filter((v): v is string => Boolean(v))
+        ),
+      ];
+      return varieties.length > 0 ? varieties.join(', ') : '—';
+    }
+    const snapshots = entry.incomingGatePassSnapshots ?? [];
+    if (snapshots.length > 0) {
+      const varieties = [
+        ...new Set(
+          snapshots
+            .map((s) => s.variety?.trim())
+            .filter((v): v is string => Boolean(v))
+        ),
+      ];
+      return varieties.length > 0 ? varieties.join(', ') : '—';
+    }
+    return entry.variety ?? '—';
+  }, [entry.variety, entry.incomingGatePassSnapshots, incomingEntries]);
+
+  /** Rows from new API shape (incomingGatePassEntries): size, variety, ref, issued. */
+  const breakdownRowsNew = useMemo(() => {
+    const rows: {
+      size: string;
+      variety: string;
+      refNo: number | string;
+      issuedQty: number;
+    }[] = [];
+    for (const ent of incomingEntries) {
+      const ref = ent.gatePassNo ?? ent.incomingGatePassId?.slice(-6) ?? '—';
+      for (const alloc of ent.allocations ?? []) {
+        const size = (alloc.size ?? '').trim();
+        if (!size) continue;
+        rows.push({
+          size,
+          variety: ent.variety?.trim() ?? '—',
+          refNo: ref,
+          issuedQty: alloc.quantityToAllocate ?? 0,
+        });
+      }
+    }
+    return rows.sort(
+      (a, b) =>
+        a.size.localeCompare(b.size) || a.variety.localeCompare(b.variety)
+    );
+  }, [incomingEntries]);
+
   /**
-   * One row per (size, location) from incoming snapshots so the table shows
+   * One row per (size, location) from incoming snapshots (legacy) so the table shows
    * separate rows for separate locations instead of concatenated locations.
    */
-  const breakdownRows = useMemo(() => {
+  const breakdownRowsLegacy = useMemo(() => {
     const snapshots = entry.incomingGatePassSnapshots ?? [];
     const rows: {
       size: string;
+      variety: string;
       location: string;
       refNo: number;
       initialQty: number;
@@ -55,6 +114,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
       availableQty: number;
     }[] = [];
     for (const snap of snapshots) {
+      const variety = snap.variety?.trim() ?? '—';
       for (const bs of snap.bagSizes ?? []) {
         const size = (bs.name ?? '').trim();
         if (!size) continue;
@@ -70,6 +130,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
         const issued = Math.max(0, init - current);
         rows.push({
           size,
+          variety,
           location: locationStr,
           refNo: snap.gatePassNo ?? 0,
           initialQty: init,
@@ -80,15 +141,26 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
     }
     return rows.sort(
       (a, b) =>
-        a.size.localeCompare(b.size) || a.location.localeCompare(b.location)
+        a.size.localeCompare(b.size) ||
+        a.variety.localeCompare(b.variety) ||
+        a.location.localeCompare(b.location)
     );
   }, [entry.incomingGatePassSnapshots]);
 
+  const useNewFormat = breakdownRowsNew.length > 0;
+
   const { totalIssued, totalAvailable } = useMemo(() => {
-    if (breakdownRows.length > 0) {
+    if (useNewFormat) {
+      const issued = breakdownRowsNew.reduce((s, r) => s + r.issuedQty, 0);
+      return { totalIssued: issued, totalAvailable: 0 };
+    }
+    if (breakdownRowsLegacy.length > 0) {
       return {
-        totalIssued: breakdownRows.reduce((s, r) => s + r.issuedQty, 0),
-        totalAvailable: breakdownRows.reduce((s, r) => s + r.availableQty, 0),
+        totalIssued: breakdownRowsLegacy.reduce((s, r) => s + r.issuedQty, 0),
+        totalAvailable: breakdownRowsLegacy.reduce(
+          (s, r) => s + r.availableQty,
+          0
+        ),
       };
     }
     let issued = 0;
@@ -98,7 +170,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
       available += od.quantityAvailable ?? 0;
     }
     return { totalIssued: issued, totalAvailable: available };
-  }, [breakdownRows, orderDetails]);
+  }, [useNewFormat, breakdownRowsNew, breakdownRowsLegacy, orderDetails]);
 
   const bags = totalIssued + totalAvailable;
 
@@ -146,11 +218,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
           {accountNumber != null && (
             <DetailRow label="Account" value={`#${accountNumber}`} />
           )}
-          <DetailRow
-            label="Variety"
-            value={entry.variety ?? '—'}
-            icon={Package}
-          />
+          <DetailRow label="Variety" value={displayVariety} icon={Package} />
           {(entry.from != null || entry.to != null) && (
             <DetailRow
               label="From → To"
@@ -184,7 +252,7 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-3 text-xs"
+              className="hidden h-8 px-3 text-xs"
               asChild
             >
               <Link
@@ -226,174 +294,275 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                         >
                           Type
                         </th>
-                        <th
-                          className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
-                          title="Storage location (chamber-floor-row)"
-                        >
-                          Location
-                        </th>
-                        <th
-                          className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
-                          title="Receipt / reference voucher"
-                        >
-                          Ref
-                        </th>
-                        <th
-                          className="w-[16%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
-                          title="Initial quantity"
-                        >
-                          Init
-                        </th>
-                        <th
-                          className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
-                          title="Quantity issued"
-                        >
-                          Issued
-                        </th>
-                        <th
-                          className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-2"
-                          title="Available"
-                        >
-                          Avail
-                        </th>
+                        {useNewFormat ? (
+                          <>
+                            <th
+                              className="w-[20%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              title="Variety"
+                            >
+                              Variety
+                            </th>
+                            <th
+                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              title="Receipt / reference"
+                            >
+                              Ref
+                            </th>
+                            <th
+                              className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-2"
+                              title="Quantity issued"
+                            >
+                              Issued
+                            </th>
+                          </>
+                        ) : (
+                          <>
+                            <th
+                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              title="Variety"
+                            >
+                              Variety
+                            </th>
+                            <th
+                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              title="Storage location (chamber-floor-row)"
+                            >
+                              Location
+                            </th>
+                            <th
+                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              title="Receipt / reference voucher"
+                            >
+                              Ref
+                            </th>
+                            <th
+                              className="w-[16%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
+                              title="Initial quantity"
+                            >
+                              Init
+                            </th>
+                            <th
+                              className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
+                              title="Quantity issued"
+                            >
+                              Issued
+                            </th>
+                            <th
+                              className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-2"
+                              title="Available"
+                            >
+                              Avail
+                            </th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
-                      {breakdownRows.length > 0
-                        ? breakdownRows.map((row, idx) => (
+                      {useNewFormat && breakdownRowsNew.length > 0
+                        ? breakdownRowsNew.map((row, idx) => (
                             <tr
-                              key={`${row.size}-${row.location}-${row.refNo}-${idx}`}
+                              key={`${row.size}-${row.variety}-${row.refNo}-${idx}`}
                               className="border-border/40 border-b"
                             >
                               <td className="px-1 py-2 font-medium sm:pr-3">
                                 {row.size}
                               </td>
                               <td className="text-foreground px-1 py-2 sm:pr-3">
-                                {row.location}
+                                {row.variety}
                               </td>
                               <td className="px-1 py-2 sm:pr-3">
                                 <span className="inline-flex items-center gap-1 sm:gap-1.5">
                                   <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
                                   <span className="text-foreground font-medium">
-                                    #{row.refNo}
+                                    {typeof row.refNo === 'number'
+                                      ? `#${row.refNo}`
+                                      : row.refNo}
                                   </span>
                                 </span>
                               </td>
-                              <td className="px-1 py-2 text-right sm:pr-3">
-                                {row.initialQty.toLocaleString('en-IN')}
-                              </td>
-                              <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
+                              <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-2">
                                 {row.issuedQty.toLocaleString('en-IN')}
-                              </td>
-                              <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
-                                {row.availableQty.toLocaleString('en-IN')}
                               </td>
                             </tr>
                           ))
-                        : orderDetails.map((od, idx) => {
-                            const initialQty =
-                              (od.quantityAvailable ?? 0) +
-                              (od.quantityIssued ?? 0);
-                            const locationBySize = (() => {
-                              const snapshots =
-                                entry.incomingGatePassSnapshots ?? [];
-                              const parts: string[] = [];
-                              const seen = new Set<string>();
-                              for (const snap of snapshots) {
-                                for (const bs of snap.bagSizes ?? []) {
-                                  if (
-                                    (bs.name ?? '').trim() !==
-                                    (od.size ?? '').trim()
-                                  )
-                                    continue;
-                                  const loc = bs.location;
-                                  if (!loc) continue;
-                                  const str = `${loc.chamber}-${loc.floor}-${loc.row}`;
-                                  if (!seen.has(str)) {
-                                    seen.add(str);
-                                    parts.push(str);
-                                  }
-                                }
-                              }
-                              return parts.length > 0 ? parts.join(', ') : '—';
-                            })();
-                            return (
+                        : breakdownRowsLegacy.length > 0
+                          ? breakdownRowsLegacy.map((row, idx) => (
                               <tr
-                                key={`${od.size}-${idx}`}
+                                key={`${row.size}-${row.variety}-${row.location}-${row.refNo}-${idx}`}
                                 className="border-border/40 border-b"
                               >
                                 <td className="px-1 py-2 font-medium sm:pr-3">
-                                  {od.size ?? '—'}
+                                  {row.size}
                                 </td>
                                 <td className="text-foreground px-1 py-2 sm:pr-3">
-                                  {locationBySize}
+                                  {row.variety}
+                                </td>
+                                <td className="text-foreground px-1 py-2 sm:pr-3">
+                                  {row.location}
                                 </td>
                                 <td className="px-1 py-2 sm:pr-3">
                                   <span className="inline-flex items-center gap-1 sm:gap-1.5">
                                     <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
-                                    {(() => {
-                                      const direct =
-                                        od.incomingGatePassNo ??
-                                        od.gatePassNumber;
-                                      const fromSnapshots = (
-                                        entry.incomingGatePassSnapshots ?? []
-                                      ).filter((s) =>
-                                        s.bagSizes?.some(
+                                    <span className="text-foreground font-medium">
+                                      #{row.refNo}
+                                    </span>
+                                  </span>
+                                </td>
+                                <td className="px-1 py-2 text-right sm:pr-3">
+                                  {row.initialQty.toLocaleString('en-IN')}
+                                </td>
+                                <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
+                                  {row.issuedQty.toLocaleString('en-IN')}
+                                </td>
+                                <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
+                                  {row.availableQty.toLocaleString('en-IN')}
+                                </td>
+                              </tr>
+                            ))
+                          : orderDetails.map((od, idx) => {
+                              const initialQty =
+                                (od.quantityAvailable ?? 0) +
+                                (od.quantityIssued ?? 0);
+                              const varietyBySize = (() => {
+                                const snapshots =
+                                  entry.incomingGatePassSnapshots ?? [];
+                                const varieties = [
+                                  ...new Set(
+                                    snapshots
+                                      .filter((snap) =>
+                                        snap.bagSizes?.some(
                                           (bs) =>
                                             (bs.name ?? '').trim() ===
                                             (od.size ?? '').trim()
                                         )
-                                      );
-                                      const refNos =
-                                        direct != null
-                                          ? [direct]
-                                          : fromSnapshots.map(
-                                              (s) => s.gatePassNo
-                                            );
-                                      if (refNos.length === 0) return '—';
-                                      return (
-                                        <span className="text-foreground font-medium">
-                                          {refNos
-                                            .map((no) => `#${no}`)
-                                            .join(', ')}
-                                        </span>
-                                      );
-                                    })()}
-                                  </span>
-                                </td>
-                                <td className="px-1 py-2 text-right sm:pr-3">
-                                  {initialQty.toLocaleString('en-IN')}
-                                </td>
-                                <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
-                                  {(od.quantityIssued ?? 0).toLocaleString(
-                                    'en-IN'
-                                  )}
-                                </td>
-                                <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
-                                  {(od.quantityAvailable ?? 0).toLocaleString(
-                                    'en-IN'
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      {(breakdownRows.length > 0 ||
+                                      )
+                                      .map((s) => s.variety?.trim())
+                                      .filter((v): v is string => Boolean(v))
+                                  ),
+                                ];
+                                return varieties.length > 0
+                                  ? varieties.join(', ')
+                                  : '—';
+                              })();
+                              const locationBySize = (() => {
+                                const snapshots =
+                                  entry.incomingGatePassSnapshots ?? [];
+                                const parts: string[] = [];
+                                const seen = new Set<string>();
+                                for (const snap of snapshots) {
+                                  for (const bs of snap.bagSizes ?? []) {
+                                    if (
+                                      (bs.name ?? '').trim() !==
+                                      (od.size ?? '').trim()
+                                    )
+                                      continue;
+                                    const loc = bs.location;
+                                    if (!loc) continue;
+                                    const str = `${loc.chamber}-${loc.floor}-${loc.row}`;
+                                    if (!seen.has(str)) {
+                                      seen.add(str);
+                                      parts.push(str);
+                                    }
+                                  }
+                                }
+                                return parts.length > 0
+                                  ? parts.join(', ')
+                                  : '—';
+                              })();
+                              return (
+                                <tr
+                                  key={`${od.size}-${idx}`}
+                                  className="border-border/40 border-b"
+                                >
+                                  <td className="px-1 py-2 font-medium sm:pr-3">
+                                    {od.size ?? '—'}
+                                  </td>
+                                  <td className="text-foreground px-1 py-2 sm:pr-3">
+                                    {varietyBySize}
+                                  </td>
+                                  <td className="text-foreground px-1 py-2 sm:pr-3">
+                                    {locationBySize}
+                                  </td>
+                                  <td className="px-1 py-2 sm:pr-3">
+                                    <span className="inline-flex items-center gap-1 sm:gap-1.5">
+                                      <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
+                                      {(() => {
+                                        const direct =
+                                          od.incomingGatePassNo ??
+                                          od.gatePassNumber;
+                                        const fromSnapshots = (
+                                          entry.incomingGatePassSnapshots ?? []
+                                        ).filter((s) =>
+                                          s.bagSizes?.some(
+                                            (bs) =>
+                                              (bs.name ?? '').trim() ===
+                                              (od.size ?? '').trim()
+                                          )
+                                        );
+                                        const refNos =
+                                          direct != null
+                                            ? [direct]
+                                            : fromSnapshots.map(
+                                                (s) => s.gatePassNo
+                                              );
+                                        if (refNos.length === 0) return '—';
+                                        return (
+                                          <span className="text-foreground font-medium">
+                                            {refNos
+                                              .map((no) => `#${no}`)
+                                              .join(', ')}
+                                          </span>
+                                        );
+                                      })()}
+                                    </span>
+                                  </td>
+                                  <td className="px-1 py-2 text-right sm:pr-3">
+                                    {initialQty.toLocaleString('en-IN')}
+                                  </td>
+                                  <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
+                                    {(od.quantityIssued ?? 0).toLocaleString(
+                                      'en-IN'
+                                    )}
+                                  </td>
+                                  <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
+                                    {(od.quantityAvailable ?? 0).toLocaleString(
+                                      'en-IN'
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                      {(breakdownRowsNew.length > 0 ||
+                        breakdownRowsLegacy.length > 0 ||
                         orderDetails.length > 0) && (
                         <tr className="border-border/60 bg-muted/50 text-destructive border-t-2 font-semibold">
-                          <td className="px-1 py-2.5 sm:pr-3" colSpan={3}>
-                            Total
-                          </td>
-                          <td className="px-1 py-2.5 text-right sm:pr-3">
-                            {(totalAvailable + totalIssued).toLocaleString(
-                              'en-IN'
-                            )}
-                          </td>
-                          <td className="text-destructive px-1 py-2.5 text-right sm:pr-3">
-                            {totalIssued.toLocaleString('en-IN')}
-                          </td>
-                          <td className="text-primary px-1 py-2.5 text-right sm:pr-2">
-                            {totalAvailable.toLocaleString('en-IN')}
-                          </td>
+                          {useNewFormat ? (
+                            <>
+                              <td className="px-1 py-2.5 sm:pr-3" colSpan={3}>
+                                Total
+                              </td>
+                              <td className="text-destructive px-1 py-2.5 text-right sm:pr-2">
+                                {totalIssued.toLocaleString('en-IN')}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-1 py-2.5 sm:pr-3" colSpan={4}>
+                                Total
+                              </td>
+                              <td className="px-1 py-2.5 text-right sm:pr-3">
+                                {(totalAvailable + totalIssued).toLocaleString(
+                                  'en-IN'
+                                )}
+                              </td>
+                              <td className="text-destructive px-1 py-2.5 text-right sm:pr-3">
+                                {totalIssued.toLocaleString('en-IN')}
+                              </td>
+                              <td className="text-primary px-1 py-2.5 text-right sm:pr-2">
+                                {totalAvailable.toLocaleString('en-IN')}
+                              </td>
+                            </>
+                          )}
                         </tr>
                       )}
                     </tbody>

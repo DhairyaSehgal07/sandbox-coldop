@@ -1,13 +1,4 @@
-import {
-  type ComponentType,
-  type ReactNode,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import * as z from 'zod';
 
@@ -55,7 +46,14 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
-import { ArrowDown, ArrowUp, Columns, MapPin, RotateCcw } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  Columns,
+  MapPin,
+  Package,
+  RotateCcw,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useCreateOutgoingGatePass,
@@ -70,34 +68,14 @@ export interface OutgoingFormProps {
   editId?: string;
 }
 
-/** Minimal form API shape for variety field + subscribe. */
-interface OutgoingFormApi {
-  Subscribe: ComponentType<{
-    selector: (state: { values: { farmerStorageLinkId: string } }) => string;
-    children: (farmerStorageLinkId: string) => ReactNode;
-  }>;
-  Field: ComponentType<{
-    name: 'variety';
-    children: (field: OutgoingVarietyFieldApi) => ReactNode;
-  }>;
-}
-
-interface OutgoingVarietyFieldApi {
-  state: {
-    value: string;
-    meta: { isTouched: boolean; isValid: boolean; errors: unknown };
-  };
-  handleChange: (v: string) => void;
-}
-
-/** Builds Option[] from unique variety strings (e.g. from incoming gate passes). */
-function uniqueVarietyOptions(varieties: string[]): Option<string>[] {
-  const unique = [...new Set(varieties)].filter(Boolean).sort();
-  return unique.map((v) => ({
-    value: v,
-    label: v,
-    searchableText: v,
-  }));
+/** Unique variety names from incoming gate passes (for filter dropdown). */
+function getUniqueVarieties(passes: IncomingGatePassItem[]): string[] {
+  const names = new Set<string>();
+  for (const p of passes) {
+    const v = p.variety?.trim();
+    if (v) names.add(v);
+  }
+  return [...names].sort();
 }
 
 /** Unique bag size names across all incoming gate passes */
@@ -111,37 +89,14 @@ function getUniqueSizes(passes: IncomingGatePassItem[]): string[] {
   return [...names].sort();
 }
 
-/** Get location for display from a pass's bag at (sizeName, bagIndex). */
-function getLocationForAllocation(
-  pass: IncomingGatePassItem | undefined,
-  sizeName: string,
-  bagIndex: number
-): { chamber: string; floor: string; row: string } | undefined {
-  if (!pass?.bagSizes?.length) return undefined;
-  const bags = pass.bagSizes.filter(
-    (b) => (b?.name ?? '').trim() === sizeName.trim()
-  );
-  const bag = bags[bagIndex];
-  if (!bag?.location) return undefined;
-  const { chamber, floor, row } = bag.location;
-  if (!chamber && !floor && !row) return undefined;
-  return {
-    chamber: chamber ?? '',
-    floor: floor ?? '',
-    row: row ?? '',
-  };
-}
-
 /** Build API payload from form values and allocation map. Returns null if no allocations. */
 function buildOutgoingPayload(
   formValues: {
     farmerStorageLinkId: string;
-    variety: string;
     orderDate: string;
     remarks: string;
     from?: string;
     to?: string;
-    truckNumber?: string;
   },
   gatePassNo: number,
   cellRemovedQuantities: Record<string, number>,
@@ -154,33 +109,27 @@ function buildOutgoingPayload(
 
   const passById = new Map(incomingPasses.map((p) => [p._id, p]));
 
-  const byPass = new Map<
-    string,
-    {
-      size: string;
-      quantityToAllocate: number;
-      bagIndex: number;
-      location?: { chamber: string; floor: string; row: string };
-    }[]
-  >();
+  /** Per passId: map of size -> total quantityToAllocate (aggregated across bagIndex). */
+  const byPassAndSize = new Map<string, Map<string, number>>();
   for (const [key, qty] of entries) {
     const parsed = parseAllocationKey(key);
     if (!parsed) continue;
-    const { passId, sizeName, bagIndex } = parsed;
-    if (!byPass.has(passId)) byPass.set(passId, []);
-    const pass = passById.get(passId);
-    const location = getLocationForAllocation(pass, sizeName, bagIndex);
-    byPass.get(passId)!.push({
-      size: sizeName,
-      quantityToAllocate: qty,
-      bagIndex,
-      ...(location && { location }),
-    });
+    const { passId, sizeName } = parsed;
+    if (!byPassAndSize.has(passId)) byPassAndSize.set(passId, new Map());
+    const sizeMap = byPassAndSize.get(passId)!;
+    sizeMap.set(sizeName, (sizeMap.get(sizeName) ?? 0) + qty);
   }
 
-  const incomingGatePasses = [...byPass.entries()].map(
-    ([incomingGatePassId, allocations]) => ({ incomingGatePassId, allocations })
-  );
+  const incomingGatePasses = [...byPassAndSize.entries()]
+    .map(([incomingGatePassId, sizeMap]) => {
+      const pass = passById.get(incomingGatePassId);
+      const variety = pass?.variety?.trim() ?? '';
+      const allocations = [...sizeMap.entries()]
+        .filter(([, quantityToAllocate]) => quantityToAllocate > 0)
+        .map(([size, quantityToAllocate]) => ({ size, quantityToAllocate }));
+      return { incomingGatePassId, variety, allocations };
+    })
+    .filter((e) => e.allocations.length > 0);
   if (incomingGatePasses.length === 0) return null;
 
   const date = payloadDateSchema.parse(formValues.orderDate);
@@ -189,12 +138,8 @@ function buildOutgoingPayload(
     farmerStorageLinkId: formValues.farmerStorageLinkId,
     gatePassNo,
     date,
-    variety: formValues.variety,
     ...(formValues.from?.trim() && { from: formValues.from.trim() }),
     ...(formValues.to?.trim() && { to: formValues.to.trim() }),
-    ...(formValues.truckNumber?.trim() && {
-      truckNumber: formValues.truckNumber.trim().toUpperCase(),
-    }),
     incomingGatePasses,
     remarks: formValues.remarks?.trim() ?? '',
   };
@@ -203,14 +148,10 @@ function buildOutgoingPayload(
 /** Fetches data, filter/sort state, and renders OutgoingVouchersTable (grouped by date, R. Voucher + size cells) */
 function OutgoingVouchersSection({
   farmerStorageLinkId,
-  varietyFilter = '',
-  onResetVariety,
   cellRemovedQuantities,
   setCellRemovedQuantities,
 }: {
   farmerStorageLinkId: string;
-  varietyFilter?: string;
-  onResetVariety?: () => void;
   cellRemovedQuantities: Record<string, number>;
   setCellRemovedQuantities: React.Dispatch<
     React.SetStateAction<Record<string, number>>
@@ -223,6 +164,7 @@ function OutgoingVouchersSection({
   } = useGetIncomingGatePassesOfSingleFarmer(farmerStorageLinkId);
 
   const [voucherSort, setVoucherSort] = useState<'asc' | 'desc'>('asc');
+  const [varietyFilter, setVarietyFilter] = useState('');
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     () => new Set()
   );
@@ -253,6 +195,11 @@ function OutgoingVouchersSection({
     [allPasses]
   );
 
+  const uniqueVarieties = useMemo(
+    () => getUniqueVarieties(allPasses),
+    [allPasses]
+  );
+
   const tableSizes = useMemo(
     () => getUniqueSizes(filteredAndSortedPasses),
     [filteredAndSortedPasses]
@@ -277,12 +224,12 @@ function OutgoingVouchersSection({
 
   const handleResetFilters = useCallback(() => {
     setVoucherSort('asc');
+    setVarietyFilter('');
     setLocationFilters({ chamber: '', floor: '', row: '' });
     setVisibleColumns(new Set());
     setSelectedOrders(new Set());
     setCellRemovedQuantities({});
-    onResetVariety?.();
-  }, [onResetVariety, setCellRemovedQuantities]);
+  }, [setCellRemovedQuantities]);
 
   const handleCellQuantityChange = useCallback(
     (
@@ -463,6 +410,45 @@ function OutgoingVouchersSection({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          {uniqueVarieties.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="font-custom text-muted-foreground text-xs leading-none font-medium">
+                Variety
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="font-custom h-10 min-w-[100px] justify-between gap-2"
+                  >
+                    <Package className="h-4 w-4 shrink-0" />
+                    {varietyFilter || 'All'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuRadioGroup
+                    value={varietyFilter}
+                    onValueChange={(v) => setVarietyFilter(v ?? '')}
+                  >
+                    <DropdownMenuRadioItem value="" className="font-custom">
+                      All
+                    </DropdownMenuRadioItem>
+                    {uniqueVarieties.map((v) => (
+                      <DropdownMenuRadioItem
+                        key={v}
+                        value={v}
+                        className="font-custom"
+                      >
+                        {v}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
           {(uniqueLocations.chambers.length > 0 ||
             uniqueLocations.floors.length > 0 ||
             uniqueLocations.rows.length > 0) && (
@@ -636,72 +622,9 @@ function OutgoingVouchersSection({
   );
 }
 
-/** Variety dropdown options from selected farmer's incoming gate passes (unique varieties). */
-function VarietyFieldWithOptions({ form }: { form: OutgoingFormApi }) {
-  return (
-    <form.Subscribe
-      selector={(state: { values: { farmerStorageLinkId: string } }) =>
-        state.values.farmerStorageLinkId
-      }
-    >
-      {(farmerStorageLinkId: string) => (
-        <VarietyFieldInner
-          form={form}
-          farmerStorageLinkId={farmerStorageLinkId ?? ''}
-        />
-      )}
-    </form.Subscribe>
-  );
-}
-
-function VarietyFieldInner({
-  form,
-  farmerStorageLinkId,
-}: {
-  form: OutgoingFormApi;
-  farmerStorageLinkId: string;
-}) {
-  const { data } = useGetIncomingGatePassesOfSingleFarmer(farmerStorageLinkId);
-  const varietyOptions: Option<string>[] = useMemo(
-    () =>
-      data?.length ? uniqueVarietyOptions(data.map((d) => d.variety)) : [],
-    [data]
-  );
-
-  return (
-    <form.Field
-      name="variety"
-      children={(field: OutgoingVarietyFieldApi) => (
-        <Field>
-          <FieldLabel className="font-custom mb-2 block text-base font-semibold">
-            Select Variety
-          </FieldLabel>
-          <SearchSelector
-            options={varietyOptions}
-            onSelect={(v) => field.handleChange(v)}
-            value={field.state.value}
-            buttonClassName="w-full justify-between"
-            emptyMessage={
-              farmerStorageLinkId
-                ? data === undefined
-                  ? 'Loading varieties...'
-                  : 'No varieties in incoming gate passes'
-                : 'Select a farmer first'
-            }
-          />
-          {field.state.meta.isTouched && !field.state.meta.isValid && (
-            <FieldError errors={field.state.meta.errors as FieldErrors} />
-          )}
-        </Field>
-      )}
-    />
-  );
-}
-
 const defaultOutgoingFormValues = {
   manualParchiNumber: '',
   farmerStorageLinkId: '',
-  variety: '',
   orderDate: formatDate(new Date()),
   from: '',
   to: '',
@@ -755,7 +678,6 @@ export const OutgoingForm = memo(function OutgoingForm({
     return {
       manualParchiNumber: editEntry.manualParchiNumber ?? '',
       farmerStorageLinkId: editEntry.farmerStorageLinkId?._id ?? '',
-      variety: editEntry.variety ?? '',
       orderDate,
       from: editEntry.from ?? '',
       to: editEntry.to ?? '',
@@ -788,15 +710,14 @@ export const OutgoingForm = memo(function OutgoingForm({
       z.object({
         manualParchiNumber: z.string().trim().optional(),
         farmerStorageLinkId: z.string().min(1, 'Please select a farmer'),
-        variety: z.string().min(1, 'Please select a variety'),
         orderDate: payloadDateSchema,
         from: z.string().trim().optional(),
         to: z.string().trim().optional(),
         truckNumber: z
-        .string()
-        .trim()
-        .optional()
-        .transform((val) => (val ? val.toUpperCase() : val)),
+          .string()
+          .trim()
+          .optional()
+          .transform((val) => (val ? val.toUpperCase() : val)),
         remarks: z.string().max(500).default(''),
       }),
     []
@@ -816,7 +737,6 @@ export const OutgoingForm = memo(function OutgoingForm({
         const payload = {
           ...(editId && { id: editId }),
           farmerStorageLinkId: value.farmerStorageLinkId,
-          variety: value.variety,
           orderDate: payloadDateSchema.parse(value.orderDate),
           from: value.from?.trim() || undefined,
           to: value.to?.trim() || undefined,
@@ -834,11 +754,9 @@ export const OutgoingForm = memo(function OutgoingForm({
         const payload = buildOutgoingPayload(
           {
             farmerStorageLinkId: value.farmerStorageLinkId,
-            variety: value.variety,
             orderDate: value.orderDate,
             from: value.from,
             to: value.to,
-            truckNumber: value.truckNumber,
             remarks: value.remarks,
           },
           gatePassNo,
@@ -966,9 +884,6 @@ export const OutgoingForm = memo(function OutgoingForm({
             }}
           />
 
-          {/* Variety Selection (unique varieties from selected farmer's incoming gate passes) */}
-          <VarietyFieldWithOptions form={form} />
-
           {/* Date */}
           <form.Field
             name="orderDate"
@@ -1092,10 +1007,9 @@ export const OutgoingForm = memo(function OutgoingForm({
             <form.Subscribe
               selector={(state) => ({
                 farmerStorageLinkId: state.values.farmerStorageLinkId,
-                variety: state.values.variety,
               })}
             >
-              {({ farmerStorageLinkId, variety }) => (
+              {({ farmerStorageLinkId }) => (
                 <Field>
                   <FieldLabel className="font-custom mb-2 block text-base font-semibold">
                     Incoming gate passes
@@ -1103,8 +1017,6 @@ export const OutgoingForm = memo(function OutgoingForm({
                   <OutgoingVouchersSection
                     key={`${farmerStorageLinkId ?? ''}-${vouchersSectionKey}`}
                     farmerStorageLinkId={farmerStorageLinkId ?? ''}
-                    varietyFilter={variety ?? ''}
-                    onResetVariety={() => form.setFieldValue('variety', '')}
                     cellRemovedQuantities={cellRemovedQuantities}
                     setCellRemovedQuantities={setCellRemovedQuantities}
                   />

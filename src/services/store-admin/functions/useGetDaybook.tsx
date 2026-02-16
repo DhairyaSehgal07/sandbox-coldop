@@ -41,7 +41,23 @@ export interface DaybookIncomingGatePassSnapshotBagSize {
 export interface DaybookIncomingGatePassSnapshot {
   _id: string;
   gatePassNo: number;
+  variety?: string;
   bagSizes: DaybookIncomingGatePassSnapshotBagSize[];
+}
+
+/** Allocation within an outgoing incoming entry (size + quantity only). */
+export interface DaybookOutgoingAllocation {
+  size: string;
+  quantityToAllocate: number;
+}
+
+/** Incoming gate pass entry on an outgoing (DELIVERY) voucher – new API shape. */
+export interface DaybookOutgoingIncomingEntry {
+  incomingGatePassId: string;
+  variety?: string;
+  /** Incoming gate pass number for display when provided by API. */
+  gatePassNo?: number;
+  allocations: DaybookOutgoingAllocation[];
 }
 
 export interface DaybookFarmerStorageLink {
@@ -55,7 +71,7 @@ export interface DaybookFarmerStorageLink {
   accountNumber: number;
 }
 
-/** Single daybook entry – RECEIPT has bagSizes; DELIVERY has orderDetails, from, to */
+/** Single daybook entry – RECEIPT has bagSizes; DELIVERY has orderDetails and/or incomingGatePassEntries, from, to */
 export interface DaybookEntry {
   _id: string;
   farmerStorageLinkId: DaybookFarmerStorageLink;
@@ -63,14 +79,17 @@ export interface DaybookEntry {
   gatePassNo: number;
   date: string;
   type: 'RECEIPT' | 'DELIVERY';
+  /** Legacy top-level variety; prefer varieties from incomingGatePassEntries when present. */
   variety?: string;
   truckNumber?: string;
   /** Present for RECEIPT */
   bagSizes?: DaybookBagSize[];
-  /** Present for DELIVERY */
+  /** Present for DELIVERY (legacy/flat list). */
   orderDetails?: DaybookOrderDetail[];
-  /** Present for DELIVERY: snapshots of incoming gate passes from which bags were issued. */
+  /** Present for DELIVERY: snapshots of incoming gate passes (legacy, with bagSizes/location). */
   incomingGatePassSnapshots?: DaybookIncomingGatePassSnapshot[];
+  /** Present for DELIVERY: per-incoming entry with variety and allocations (new API shape). */
+  incomingGatePassEntries?: DaybookOutgoingIncomingEntry[];
   /** Present for DELIVERY */
   from?: string;
   /** Present for DELIVERY */

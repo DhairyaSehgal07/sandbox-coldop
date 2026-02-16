@@ -12,23 +12,15 @@ import { voucherNumberKeys } from '@/services/store-admin/functions/useGetVouche
    API request body schema (matches backend)
 ------------------------------------------------- */
 
-const locationDisplaySchema = z.object({
-  chamber: z.string().optional(),
-  floor: z.string().optional(),
-  row: z.string().optional(),
-});
-
+/** API allocation: size + quantity only (no bagIndex). */
 const allocationSchema = z.object({
   size: z.string().min(1, 'Size is required'),
   quantityToAllocate: z.number().int().min(1, 'Quantity must be at least 1'),
-  /** When an incoming pass has the same size at multiple locations, bagIndex identifies which slot (0, 1, …). */
-  bagIndex: z.number().int().min(0).optional(),
-  /** Location (Ch/F/R) for display in summary; not sent to backend. */
-  location: locationDisplaySchema.optional(),
 });
 
 const incomingGatePassEntrySchema = z.object({
   incomingGatePassId: z.string().min(1, 'Incoming gate pass ID is required'),
+  variety: z.string().min(1, 'Variety is required'),
   allocations: z
     .array(allocationSchema)
     .min(1, 'At least one allocation is required'),
@@ -38,10 +30,8 @@ export const createOutgoingGatePassBodySchema = z.object({
   farmerStorageLinkId: z.string().min(1, 'Farmer storage link is required'),
   gatePassNo: z.number().int().min(1, 'Gate pass number must be at least 1'),
   date: z.string().min(1, 'Date is required'),
-  variety: z.string().min(1, 'Variety is required'),
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
-  truckNumber: z.string().trim().optional(),
   incomingGatePasses: z
     .array(incomingGatePassEntrySchema)
     .min(1, 'At least one incoming gate pass with allocations is required'),

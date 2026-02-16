@@ -942,7 +942,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
                                 Boolean(loc.floor?.trim()) &&
                                 Boolean(loc.row?.trim());
                               const combined = allFilled
-                                ? `${loc.chamber.trim()} ${loc.floor.trim()} ${loc.row.trim()}`
+                                ? `${loc.chamber.trim()}-${loc.floor.trim()}-${loc.row.trim()}`
                                 : null;
                               const anyFilled =
                                 !!loc.chamber?.trim() ||

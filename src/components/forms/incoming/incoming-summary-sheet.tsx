@@ -104,7 +104,7 @@ function formatLocation(loc: LocationEntry | undefined): string {
   const fl = loc.floor?.trim() || '';
   const r = loc.row?.trim() || '';
   if (!ch && !fl && !r) return '—';
-  return [ch, fl, r].filter(Boolean).join(' ');
+  return [ch, fl, r].filter(Boolean).join('-');
 }
 
 const RowCells = memo(function RowCells({
