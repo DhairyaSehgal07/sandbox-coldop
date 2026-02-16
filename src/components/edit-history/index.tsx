@@ -86,6 +86,10 @@ function SnapshotSummary({ snapshot }: { snapshot: EditHistorySnapshot }) {
           <p className="font-medium">#{snapshot.gatePassNo ?? '—'}</p>
         </div>
         <div>
+          <span className="text-muted-foreground">Manual parchi #</span>
+          <p className="font-medium">{snapshot.manualParchiNumber ?? '—'}</p>
+        </div>
+        <div>
           <span className="text-muted-foreground">Date</span>
           <p className="font-medium">
             {snapshot.date

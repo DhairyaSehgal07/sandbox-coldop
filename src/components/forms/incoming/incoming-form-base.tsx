@@ -238,17 +238,30 @@ export const IncomingFormBase = memo(function IncomingFormBase({
     if (!editEntry?.bagSizes?.length || !quantitySizes.length) return null;
     const sizeQuantities = { ...defaultSizeQuantities };
     const locationBySize: Record<string, LocationEntry> = {};
+    const extraQuantityRows: ExtraQuantityRow[] = [];
+    /** Track first occurrence of each size name; duplicates go to extra rows. */
+    const sizeNameSeen = new Set<string>();
     for (const bag of editEntry.bagSizes) {
-      if (quantitySizes.includes(bag.name)) {
+      if (!quantitySizes.includes(bag.name)) continue;
+      const loc = bag.location
+        ? {
+            chamber: bag.location.chamber ?? '',
+            floor: bag.location.floor ?? '',
+            row: bag.location.row ?? '',
+          }
+        : { ...DEFAULT_LOCATION };
+      if (!sizeNameSeen.has(bag.name)) {
+        sizeNameSeen.add(bag.name);
         sizeQuantities[bag.name] = bag.initialQuantity;
-        const loc = bag.location;
-        locationBySize[bag.name] = loc
-          ? {
-              chamber: loc.chamber ?? '',
-              floor: loc.floor ?? '',
-              row: loc.row ?? '',
-            }
-          : { ...DEFAULT_LOCATION };
+        locationBySize[bag.name] = loc;
+      } else {
+        const extraId = crypto.randomUUID();
+        extraQuantityRows.push({
+          id: extraId,
+          size: bag.name,
+          quantity: bag.initialQuantity,
+        });
+        locationBySize[`${EXTRA_ROW_KEY_PREFIX}${extraId}`] = loc;
       }
     }
     return {
@@ -260,7 +273,7 @@ export const IncomingFormBase = memo(function IncomingFormBase({
       variety: editEntry.variety ?? '',
       truckNumber: editEntry.truckNumber ?? '',
       sizeQuantities,
-      extraQuantityRows: [] as ExtraQuantityRow[],
+      extraQuantityRows,
       locationBySize,
       remarks: editEntry.remarks ?? '',
       manualGatePassNumber: undefined as number | undefined,
