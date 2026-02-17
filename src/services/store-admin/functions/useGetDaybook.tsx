@@ -24,6 +24,8 @@ export interface DaybookOrderDetail {
   size: string;
   quantityAvailable: number;
   quantityIssued: number;
+  /** Storage location (chamber-floor-row) when present in API response; used to match snapshot rows. */
+  location?: { chamber?: string; floor?: string; row?: string };
   /** Incoming gate pass number from which bags were issued (when present in API response). API may send as incomingGatePassNo or gatePassNumber. */
   incomingGatePassNo?: number;
   gatePassNumber?: number;

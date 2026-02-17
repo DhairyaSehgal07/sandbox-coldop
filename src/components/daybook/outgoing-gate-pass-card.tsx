@@ -35,9 +35,7 @@ function sortByPreferenceOrder<T>(
   preferenceSizes: string[]
 ): T[] {
   if (preferenceSizes.length === 0) return items;
-  const orderMap = new Map(
-    preferenceSizes.map((size, i) => [size.trim(), i])
-  );
+  const orderMap = new Map(preferenceSizes.map((size, i) => [size.trim(), i]));
   return [...items].sort((a, b) => {
     const idxA = orderMap.get(getSize(a).trim()) ?? Infinity;
     const idxB = orderMap.get(getSize(b).trim()) ?? Infinity;
@@ -182,9 +180,11 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
   /**
    * One row per (size, location) from incoming snapshots (legacy) so the table shows
    * separate rows for separate locations instead of concatenated locations.
+   * When orderDetails exist, INIT / Issued / Avail use orderDetails (quantityAvailable + quantityIssued for INIT).
    */
   const breakdownRowsLegacy = useMemo(() => {
     const snapshots = entry.incomingGatePassSnapshots ?? [];
+    const orderDetailsList = entry.orderDetails ?? [];
     const rows: {
       size: string;
       variety: string;
@@ -206,22 +206,29 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
               ''
             ) || '—'
           : '—';
-        const init = bs.initialQuantity ?? 0;
-        const current = bs.currentQuantity ?? 0;
-        const issued = Math.max(0, init - current);
+        const matchOd = orderDetailsList.find(
+          (od) =>
+            (od.size ?? '').trim() === size &&
+            String(od.location?.chamber ?? '') === String(loc?.chamber ?? '') &&
+            String(od.location?.floor ?? '') === String(loc?.floor ?? '') &&
+            String(od.location?.row ?? '') === String(loc?.row ?? '')
+        );
+        const availableQty = matchOd?.quantityAvailable ?? bs.currentQuantity ?? 0;
+        const issuedQty = matchOd?.quantityIssued ?? Math.max(0, (bs.initialQuantity ?? 0) - (bs.currentQuantity ?? 0));
+        const initialQty = availableQty + issuedQty;
         rows.push({
           size,
           variety,
           location: locationStr,
           refNo: snap.gatePassNo ?? 0,
-          initialQty: init,
-          issuedQty: issued,
-          availableQty: current,
+          initialQty,
+          issuedQty,
+          availableQty,
         });
       }
     }
     return sortByPreferenceOrder(rows, (r) => r.size, preferenceSizes);
-  }, [entry.incomingGatePassSnapshots, preferenceSizes]);
+  }, [entry.incomingGatePassSnapshots, entry.orderDetails, preferenceSizes]);
 
   const useNewFormat = breakdownRowsNew.length > 0;
 
@@ -342,7 +349,9 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
               onClick={handlePrintPdf}
               disabled={isGeneratingPdf}
               className="h-8 w-8 p-0"
-              aria-label={isGeneratingPdf ? 'Generating PDF…' : 'Print gate pass'}
+              aria-label={
+                isGeneratingPdf ? 'Generating PDF…' : 'Print gate pass'
+              }
             >
               {isGeneratingPdf ? (
                 <Spinner className="h-3.5 w-3.5" />
@@ -379,12 +388,12 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                 <h4 className="text-muted-foreground/70 mb-3 text-xs font-semibold tracking-wider uppercase">
                   Detailed Breakdown
                 </h4>
-                <div className="bg-muted/30 overflow-x-auto rounded-lg p-4">
-                  <table className="font-custom w-full min-w-0 table-fixed text-sm">
+                <div className="bg-muted/30 -mx-4 overflow-x-auto rounded-lg p-4 sm:mx-0">
+                  <table className="font-custom w-full min-w-xl table-fixed text-sm">
                     <thead>
                       <tr className="text-muted-foreground/70 border-border/50 border-b text-left text-[10px] font-medium tracking-wider uppercase">
                         <th
-                          className="w-[18%] px-1 pb-2 sm:px-1 sm:pr-3"
+                          className="w-[18%] min-w-16 px-1 pb-2 whitespace-nowrap sm:px-1 sm:pr-3"
                           title="Bag type / size"
                         >
                           Type
@@ -392,19 +401,19 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                         {useNewFormat ? (
                           <>
                             <th
-                              className="w-[20%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              className="w-[20%] min-w-16 px-1 pb-2 whitespace-nowrap sm:px-1 sm:pr-3"
                               title="Variety"
                             >
                               Variety
                             </th>
                             <th
-                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              className="w-[16%] min-w-14 px-1 pb-2 whitespace-nowrap sm:px-1 sm:pr-3"
                               title="Receipt / reference"
                             >
                               Ref
                             </th>
                             <th
-                              className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-2"
+                              className="w-[22%] min-w-14 px-1 pb-2 text-right whitespace-nowrap sm:px-1 sm:pr-2"
                               title="Quantity issued"
                             >
                               Issued
@@ -413,40 +422,40 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                         ) : (
                           <>
                             <th
-                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              className="w-[16%] min-w-16 px-1 pb-2 whitespace-nowrap sm:px-1 sm:pr-3"
                               title="Variety"
                             >
                               Variety
                             </th>
                             <th
-                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              className="w-[16%] min-w-14 px-1 pb-2 whitespace-nowrap sm:px-1 sm:pr-3"
                               title="Storage location (chamber-floor-row)"
                             >
                               Location
                             </th>
                             <th
-                              className="w-[16%] px-1 pb-2 sm:px-1 sm:pr-3"
+                              className="w-[16%] min-w-12 px-1 pb-2 whitespace-nowrap sm:px-1 sm:pr-3"
                               title="Receipt / reference voucher"
                             >
                               Ref
                             </th>
                             <th
-                              className="w-[16%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
-                              title="Initial quantity"
+                              className="w-[16%] min-w-10 px-1 pb-2 text-right whitespace-nowrap sm:px-1 sm:pr-3"
+                              title="Available (quantity available + issued)"
                             >
-                              Init
+                              Avail
                             </th>
                             <th
-                              className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-3"
+                              className="w-[22%] min-w-12 px-1 pb-2 text-right whitespace-nowrap sm:px-1 sm:pr-3"
                               title="Quantity issued"
                             >
                               Issued
                             </th>
                             <th
-                              className="w-[22%] px-1 pb-2 text-right sm:px-1 sm:pr-2"
-                              title="Available"
+                              className="w-[22%] min-w-12 px-1 pb-2 text-right whitespace-nowrap sm:px-1 sm:pr-2"
+                              title="Remaining"
                             >
-                              Avail
+                              Rem
                             </th>
                           </>
                         )}
@@ -459,23 +468,36 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                               key={`${row.size}-${row.variety}-${row.refNo}-${idx}`}
                               className="border-border/40 border-b"
                             >
-                              <td className="px-1 py-2 font-medium sm:pr-3">
+                              <td
+                                className="min-w-0 truncate px-1 py-2 font-medium sm:pr-3"
+                                title={row.size}
+                              >
                                 {row.size}
                               </td>
-                              <td className="text-foreground px-1 py-2 sm:pr-3">
+                              <td
+                                className="text-foreground min-w-0 truncate px-1 py-2 sm:pr-3"
+                                title={row.variety}
+                              >
                                 {row.variety}
                               </td>
-                              <td className="px-1 py-2 sm:pr-3">
-                                <span className="inline-flex items-center gap-1 sm:gap-1.5">
+                              <td className="min-w-0 px-1 py-2 sm:pr-3">
+                                <span className="inline-flex max-w-full min-w-0 items-center gap-1 sm:gap-1.5">
                                   <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
-                                  <span className="text-foreground font-medium">
+                                  <span
+                                    className="text-foreground min-w-0 truncate font-medium"
+                                    title={
+                                      typeof row.refNo === 'number'
+                                        ? `#${row.refNo}`
+                                        : String(row.refNo)
+                                    }
+                                  >
                                     {typeof row.refNo === 'number'
                                       ? `#${row.refNo}`
                                       : row.refNo}
                                   </span>
                                 </span>
                               </td>
-                              <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-2">
+                              <td className="text-destructive px-1 py-2 text-right font-medium whitespace-nowrap sm:pr-2">
                                 {row.issuedQty.toLocaleString('en-IN')}
                               </td>
                             </tr>
@@ -486,30 +508,42 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                                 key={`${row.size}-${row.variety}-${row.location}-${row.refNo}-${idx}`}
                                 className="border-border/40 border-b"
                               >
-                                <td className="px-1 py-2 font-medium sm:pr-3">
+                                <td
+                                  className="min-w-0 truncate px-1 py-2 font-medium sm:pr-3"
+                                  title={row.size}
+                                >
                                   {row.size}
                                 </td>
-                                <td className="text-foreground px-1 py-2 sm:pr-3">
+                                <td
+                                  className="text-foreground min-w-0 truncate px-1 py-2 sm:pr-3"
+                                  title={row.variety}
+                                >
                                   {row.variety}
                                 </td>
-                                <td className="text-foreground px-1 py-2 sm:pr-3">
+                                <td
+                                  className="text-foreground min-w-0 truncate px-1 py-2 sm:pr-3"
+                                  title={row.location}
+                                >
                                   {row.location}
                                 </td>
-                                <td className="px-1 py-2 sm:pr-3">
-                                  <span className="inline-flex items-center gap-1 sm:gap-1.5">
+                                <td className="min-w-0 px-1 py-2 sm:pr-3">
+                                  <span className="inline-flex max-w-full min-w-0 items-center gap-1 sm:gap-1.5">
                                     <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
-                                    <span className="text-foreground font-medium">
+                                    <span
+                                      className="text-foreground min-w-0 truncate font-medium"
+                                      title={`#${row.refNo}`}
+                                    >
                                       #{row.refNo}
                                     </span>
                                   </span>
                                 </td>
-                                <td className="px-1 py-2 text-right sm:pr-3">
+                                <td className="px-1 py-2 text-right whitespace-nowrap sm:pr-3">
                                   {row.initialQty.toLocaleString('en-IN')}
                                 </td>
-                                <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
+                                <td className="text-destructive px-1 py-2 text-right font-medium whitespace-nowrap sm:pr-3">
                                   {row.issuedQty.toLocaleString('en-IN')}
                                 </td>
-                                <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
+                                <td className="text-primary px-1 py-2 text-right font-medium whitespace-nowrap sm:px-1 sm:pr-2">
                                   {row.availableQty.toLocaleString('en-IN')}
                                 </td>
                               </tr>
@@ -564,62 +598,68 @@ const OutgoingGatePassCard = memo(function OutgoingGatePassCard({
                                   ? parts.join(', ')
                                   : '—';
                               })();
+                              const refDisplay = (() => {
+                                const direct =
+                                  od.incomingGatePassNo ?? od.gatePassNumber;
+                                const fromSnapshots = (
+                                  entry.incomingGatePassSnapshots ?? []
+                                ).filter((s) =>
+                                  s.bagSizes?.some(
+                                    (bs) =>
+                                      (bs.name ?? '').trim() ===
+                                      (od.size ?? '').trim()
+                                  )
+                                );
+                                const refNos =
+                                  direct != null
+                                    ? [direct]
+                                    : fromSnapshots.map((s) => s.gatePassNo);
+                                if (refNos.length === 0) return '—';
+                                return refNos.map((no) => `#${no}`).join(', ');
+                              })();
                               return (
                                 <tr
                                   key={`${od.size}-${idx}`}
                                   className="border-border/40 border-b"
                                 >
-                                  <td className="px-1 py-2 font-medium sm:pr-3">
+                                  <td
+                                    className="min-w-0 truncate px-1 py-2 font-medium sm:pr-3"
+                                    title={od.size ?? '—'}
+                                  >
                                     {od.size ?? '—'}
                                   </td>
-                                  <td className="text-foreground px-1 py-2 sm:pr-3">
+                                  <td
+                                    className="text-foreground min-w-0 truncate px-1 py-2 sm:pr-3"
+                                    title={varietyBySize}
+                                  >
                                     {varietyBySize}
                                   </td>
-                                  <td className="text-foreground px-1 py-2 sm:pr-3">
+                                  <td
+                                    className="text-foreground min-w-0 truncate px-1 py-2 sm:pr-3"
+                                    title={locationBySize}
+                                  >
                                     {locationBySize}
                                   </td>
-                                  <td className="px-1 py-2 sm:pr-3">
-                                    <span className="inline-flex items-center gap-1 sm:gap-1.5">
+                                  <td className="min-w-0 px-1 py-2 sm:pr-3">
+                                    <span className="inline-flex max-w-full min-w-0 items-center gap-1 sm:gap-1.5">
                                       <span className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
-                                      {(() => {
-                                        const direct =
-                                          od.incomingGatePassNo ??
-                                          od.gatePassNumber;
-                                        const fromSnapshots = (
-                                          entry.incomingGatePassSnapshots ?? []
-                                        ).filter((s) =>
-                                          s.bagSizes?.some(
-                                            (bs) =>
-                                              (bs.name ?? '').trim() ===
-                                              (od.size ?? '').trim()
-                                          )
-                                        );
-                                        const refNos =
-                                          direct != null
-                                            ? [direct]
-                                            : fromSnapshots.map(
-                                                (s) => s.gatePassNo
-                                              );
-                                        if (refNos.length === 0) return '—';
-                                        return (
-                                          <span className="text-foreground font-medium">
-                                            {refNos
-                                              .map((no) => `#${no}`)
-                                              .join(', ')}
-                                          </span>
-                                        );
-                                      })()}
+                                      <span
+                                        className="text-foreground min-w-0 truncate font-medium"
+                                        title={refDisplay}
+                                      >
+                                        {refDisplay}
+                                      </span>
                                     </span>
                                   </td>
-                                  <td className="px-1 py-2 text-right sm:pr-3">
+                                  <td className="px-1 py-2 text-right whitespace-nowrap sm:pr-3">
                                     {initialQty.toLocaleString('en-IN')}
                                   </td>
-                                  <td className="text-destructive px-1 py-2 text-right font-medium sm:pr-3">
+                                  <td className="text-destructive px-1 py-2 text-right font-medium whitespace-nowrap sm:pr-3">
                                     {(od.quantityIssued ?? 0).toLocaleString(
                                       'en-IN'
                                     )}
                                   </td>
-                                  <td className="text-primary px-1 py-2 text-right font-medium sm:px-1 sm:pr-2">
+                                  <td className="text-primary px-1 py-2 text-right font-medium whitespace-nowrap sm:px-1 sm:pr-2">
                                     {(od.quantityAvailable ?? 0).toLocaleString(
                                       'en-IN'
                                     )}

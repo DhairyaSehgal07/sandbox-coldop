@@ -12,10 +12,18 @@ import { voucherNumberKeys } from '@/services/store-admin/functions/useGetVouche
    API request body schema (matches backend)
 ------------------------------------------------- */
 
-/** API allocation: size + quantity only (no bagIndex). */
+/** Location for an allocation (chamber, floor, row). */
+const locationSchema = z.object({
+  chamber: z.string(),
+  floor: z.string(),
+  row: z.string(),
+});
+
+/** API allocation: size, quantity, and location. */
 const allocationSchema = z.object({
   size: z.string().min(1, 'Size is required'),
   quantityToAllocate: z.number().int().min(1, 'Quantity must be at least 1'),
+  location: locationSchema,
 });
 
 const incomingGatePassEntrySchema = z.object({
@@ -33,13 +41,12 @@ export const createOutgoingGatePassBodySchema = z.object({
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
   truckNumber: z.string().trim().optional(),
-  manualParchiNumber: z
-    .optional(
-      z.coerce
-        .number()
-        .int('Manual parchi number must be an integer')
-        .positive('Manual parchi number must be a positive number')
-    ),
+  manualParchiNumber: z.optional(
+    z.coerce
+      .number()
+      .int('Manual parchi number must be an integer')
+      .positive('Manual parchi number must be a positive number')
+  ),
   incomingGatePasses: z
     .array(incomingGatePassEntrySchema)
     .min(1, 'At least one incoming gate pass with allocations is required'),

@@ -111,24 +111,38 @@ function buildOutgoingPayload(
 
   const passById = new Map(incomingPasses.map((p) => [p._id, p]));
 
-  /** Per passId: map of size -> total quantityToAllocate (aggregated across bagIndex). */
-  const byPassAndSize = new Map<string, Map<string, number>>();
+  /** Per passId: list of allocations (size, quantityToAllocate, location) – one per cell. */
+  const byPassAllocations = new Map<
+    string,
+    Array<{ size: string; quantityToAllocate: number; location: { chamber: string; floor: string; row: string } }>
+  >();
   for (const [key, qty] of entries) {
     const parsed = parseAllocationKey(key);
     if (!parsed) continue;
-    const { passId, sizeName } = parsed;
-    if (!byPassAndSize.has(passId)) byPassAndSize.set(passId, new Map());
-    const sizeMap = byPassAndSize.get(passId)!;
-    sizeMap.set(sizeName, (sizeMap.get(sizeName) ?? 0) + qty);
+    const { passId, sizeName, bagIndex } = parsed;
+    const pass = passById.get(passId);
+    if (!pass) continue;
+    const details = getBagDetailsForSize(pass, sizeName);
+    const detail = details[bagIndex];
+    const location = detail?.location
+      ? {
+          chamber: detail.location.chamber ?? '',
+          floor: detail.location.floor ?? '',
+          row: detail.location.row ?? '',
+        }
+      : { chamber: '', floor: '', row: '' };
+    if (!byPassAllocations.has(passId)) byPassAllocations.set(passId, []);
+    byPassAllocations.get(passId)!.push({
+      size: sizeName,
+      quantityToAllocate: qty,
+      location,
+    });
   }
 
-  const incomingGatePasses = [...byPassAndSize.entries()]
-    .map(([incomingGatePassId, sizeMap]) => {
+  const incomingGatePasses = [...byPassAllocations.entries()]
+    .map(([incomingGatePassId, allocations]) => {
       const pass = passById.get(incomingGatePassId);
       const variety = pass?.variety?.trim() ?? '';
-      const allocations = [...sizeMap.entries()]
-        .filter(([, quantityToAllocate]) => quantityToAllocate > 0)
-        .map(([size, quantityToAllocate]) => ({ size, quantityToAllocate }));
       return { incomingGatePassId, variety, allocations };
     })
     .filter((e) => e.allocations.length > 0);
